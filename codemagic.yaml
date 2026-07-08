@@ -1,18 +1,17 @@
 workflows:
-  android-debug:
-    name: Build Android Debug
+  android-build:
+    name: Build Android
     environment:
       node: latest
     scripts:
       - name: Install Cordova
         script: |
           npm install -g cordova
-          cordova --version
-      - name: Install Dependencies
-        script: npm install
-      - name: Add Platform and Build
+      - name: Prepare Project
         script: |
           cordova platform add android
+      - name: Build Android
+        script: |
           cordova build android
     artifacts:
       - platforms/android/app/build/outputs/apk/debug/*.apk
