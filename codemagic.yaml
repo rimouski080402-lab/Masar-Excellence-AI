@@ -5,10 +5,12 @@ workflows:
       node: latest
     scripts:
       - name: Install Cordova
-        script: npm install -g cordova
+        script: |
+          npm install -g cordova
+          cordova --version
       - name: Install Dependencies
         script: npm install
-      - name: Build Android
+      - name: Add Platform and Build
         script: |
           cordova platform add android
           cordova build android
