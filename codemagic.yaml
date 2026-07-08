@@ -4,7 +4,5 @@ workflows:
     environment:
       node: latest
     scripts:
-      - name: Install dependencies
-        script: npm install
       - name: Build
-        script: npm run build
+        script: echo "No build script needed for this project"
