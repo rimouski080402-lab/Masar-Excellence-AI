@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>منصة حساب المعدلات (نظام مسار) وانتقاء المدارس</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Tajawal', sans-serif;
+            overflow-x: hidden;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        .table-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark .table-container::-webkit-scrollbar-thumb {
+            background-color: #475569;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        @media print {
+            body {
+                background-color: white !important;
+            }
+            input {
+                border: none !important;
+                text-align: center;
+            }
+            .shadow-2xl,
+            .shadow-inner,
+            .shadow-lg,
+            .shadow-xl {
+                box-shadow: none !important;
+            }
+            .border-slate-200,
+            .dark\:border-slate-700 {
+                border-color: #cbd5e1 !important;
+            }
+            .print\:hidden {
+                display: none !important;
+            }
+            .print\:block {
+                display: block !important;
+            }
+            .print\:border {
+                border: 1px solid #ccc !important;
+            }
+            .print\:bg-white {
+                background-color: white !important;
+            }
+            .print\:text-black {
+                color: black !important;
+            }
+            .print\:shadow-none {
+                box-shadow: none !important;
+            }
+            .print\:scale-100 {
+                transform: scale(1) !important;
+            }
+            .print\:mt-4 {
+                margin-top: 1rem !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .calendar-grid {
+                page-break-inside: avoid;
+            }
+            .school-entry-card,
+            .holiday-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+
+        #hidden-certificate-card {
+            font-family: 'Tajawal', sans-serif !important;
+            letter-spacing: 0.3px;
+        }
+
+        .floating-element {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .floating-hidden {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transform: translateY(30px) !important;
+        }
+
+        .school-card {
+            transition: all 0.3s ease;
+        }
+        .school-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        .school-eligible {
+            border-right: 4px solid #10b981;
+        }
+        .school-not-eligible {
+            border-right: 4px solid #ef4444;
+        }
+        .threshold-badge {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+        }
+
+        /* أنماط التقويم الجديدة */
+        .calendar-section {
+            transition: all 0.3s ease;
+        }
+        .calendar-section .entry-card {
+            border-right: 6px solid;
+            transition: all 0.2s ease;
+        }
+        .calendar-section .entry-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+        .calendar-section .holiday-card {
+            transition: all 0.2s ease;
+        }
+        .calendar-section .holiday-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+        .date-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.6rem;
+            border-radius: 9999px;
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+        }
+        .emoji-big {
+            font-size: 2.2rem;
+            line-height: 1;
+        }
+        .emoji-med {
+            font-size: 1.6rem;
+            line-height: 1;
+        }
+        .holiday-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        @media (max-width: 640px) {
+            .emoji-big {
+                font-size: 1.6rem;
+            }
+            .emoji-med {
+                font-size: 1.2rem;
+            }
+            .holiday-icon-wrap {
+                width: 36px;
+                height: 36px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 md:py-10 px-3 md:px-4 bg-slate-50 dark:bg-slate-900 transition-colors duration-300 print:bg-white print:text-black w-full text-sm md:text-base">
+
+    <!-- ===== الترحيب ===== -->
+    <div id="welcome-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[100] hidden fade-in print:hidden">
+        <div class="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-2xl max-w-sm md:max-w-md w-full mx-4 shadow-2xl text-center border border-slate-200 dark:border-slate-700">
+            <div class="w-16 h-16 md:w-20 md:h-20 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600 dark:text-blue-400 text-2xl md:text-3xl animate-bounce">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <h3 id="modal-title" class="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white mb-2"></h3>
+            <p id="modal-desc" class="text-slate-600 dark:text-slate-300 mb-6 font-medium text-base md:text-lg"></p>
+            <button onclick="closeWelcomeModal()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold py-3 rounded-xl shadow-lg hover:from-blue-700 hover:to-cyan-600 transition duration-300 text-base md:text-lg">
+                ابدأ الحساب الآن 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== أزرار التحكم العلوية ===== -->
+    <div class="fixed top-4 left-4 right-4 flex justify-between z-50 print:hidden pointer-events-none">
+        <button onclick="toggleDarkMode()" class="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-yellow-400 shadow-lg border border-slate-200 dark:border-slate-700 w-12 h-12 flex items-center justify-center hover:scale-105 transition-transform">
+            <i id="theme-icon" class="fa-solid fa-moon text-xl"></i>
+        </button>
+        <button onclick="resetAllData()" class="pointer-events-auto bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-rose-600 dark:text-rose-400 font-bold shadow-lg border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-slate-700 px-4 py-2 rounded-full transition flex items-center gap-2 text-xs sm:text-sm hover:scale-105 transition-transform">
+            <i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">مسح البيانات</span>
+        </button>
+    </div>
+
+    <!-- ===== الهيدر ===== -->
+    <header class="text-center mb-6 md:mb-8 w-full max-w-full md:max-w-[90%] 2xl:max-w-[1400px] mt-12 md:mt-6 transition-all duration-300 px-2">
+        <h1 class="text-3xl md:text-5xl font-black text-blue-700 dark:text-blue-400 mb-3 md:mb-4 drop-shadow-md print:text-blue-800 tracking-wide leading-tight">
+            <i class="fa-solid fa-chart-line mr-1 md:mr-2"></i> 🏆 Masar Excellence AI
+        </h1>
+        <p class="text-slate-600 dark:text-slate-300 text-sm md:text-lg font-medium print:text-gray-600">منصة ذكية لحساب المعدلات، التوجيه الدراسي، والتوقعات باحترافية</p>
+    </header>
+
+    <!-- ===== المحتوى الرئيسي ===== -->
+    <main class="w-full max-w-full md:max-w-[90%] 2xl:max-w-[1400px] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700 print:shadow-none print:border-none mb-8 transition-all duration-300">
+
+        <!-- ===== شريط الاختيارات ===== -->
+        <div class="p-4 md:p-6 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 print:hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div>
+                    <label class="block text-slate-700 dark:text-slate-300 font-bold mb-2 text-sm md:text-base">اختر السلك الدراسي</label>
+                    <select id="level-select" onchange="handleLevelChange()" class="w-full px-3 md:px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm md:text-base">
+                        <option value="high" selected>الثانوي التأهيلي</option>
+                        <option value="middle">التعليم الإعدادي</option>
+                        <option value="primary">التعليم الابتدائي</option>
+                        <option value="university">التعليم الجامعي والمدارس العليا</option>
+                    </select>
+                </div>
+
+                <div id="branch-container">
+                    <label class="block text-slate-700 dark:text-slate-300 font-bold mb-2 text-sm md:text-base">اختر الشعبة والمسلك</label>
+                    <select id="branch-select" onchange="onBranchOrLevelChange()" class="w-full px-3 md:px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm md:text-base truncate">
+                        <option value="tc_sc">الجذع المشترك العلمي</option>
+                        <option value="tc_arts">الجذع المشترك للآداب والعلوم الإنسانية</option>
+                        <option value="tc_tech">الجذع المشترك التكنولوجي</option>
+                        <option value="tc_eco">الجذع المشترك للخدمات والتدبير</option>
+                        <option value="first_sc_exp">الأولى باكالوريا - علوم تجريبية</option>
+                        <option value="first_arts">الأولى باكالوريا - آداب وعلوم إنسانية</option>
+                        <option value="first_sma">الأولى باكالوريا - علوم رياضية</option>
+                        <option value="first_eco">الأولى باكالوريا - علوم اقتصادية وتدبير</option>
+                        <option value="first_tech">الأولى باكالوريا - علوم وتكنولوجيات</option>
+                        <option value="pc" selected>الثانية باكالوريا - مسلك العلوم الفيزيائية (PC)</option>
+                        <option value="svt">الثانية باكالوريا - مسلك علوم الحياة والأرض (SVT)</option>
+                        <option value="sma">الثانية باكالوريا - علوم رياضية (أ) و (ب)</option>
+                        <option value="arts">الثانية باكالوريا - الآداب</option>
+                        <option value="humanities">الثانية باكالوريا - العلوم الإنسانية</option>
+                        <option value="eco">الثانية باكالوريا - علوم اقتصادية</option>
+                        <option value="management">الثانية باكالوريا - علوم التدبير المحاسباتي</option>
+                        <option value="tech_mech">الثانية باكالوريا - علوم وتكنولوجيات ميكانيكية</option>
+                        <option value="tech_elec">الثانية باكالوريا - علوم وتكنولوجيات كهربائية</option>
+                        <option value="prof_industrial">البكالوريا المهنية - المسلك الصناعي</option>
+                        <option value="prof_services">البكالوريا المهنية - المسلك الخدماتي</option>
+                        <option value="prof_agricultural">البكالوريا المهنية - المسلك الفلاحي</option>
+                    </select>
+                </div>
+            </div>
+            <!-- تم إزالة حقل اسم الطالب -->
+        </div>
+
+        <!-- ===== جدول المواد ===== -->
+        <div class="p-3 md:p-8 print:p-0 w-full">
+            <div class="hidden print:block mb-6 text-right font-bold text-lg border-b pb-2">
+                الاسم الكامل: .................................................... <br /><br />
+                القسم: ...........................................................
+            </div>
+
+            <div class="table-container mb-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner print:shadow-none print:border-gray-400">
+                <table class="w-full min-w-[600px] text-center whitespace-nowrap print:border-collapse print:w-full">
+                    <thead class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 print:bg-gray-200 print:text-black">
+                        <tr>
+                            <th id="th-name" class="py-3 px-3 font-bold text-right border-b dark:border-slate-600 print:border print:border-gray-400">المادة</th>
+                            <th id="th-t1" class="py-3 px-1 md:px-2 font-bold border-b dark:border-slate-600 print:border print:border-gray-400">الفرض 1</th>
+                            <th id="th-t2" class="py-3 px-1 md:px-2 font-bold border-b dark:border-slate-600 print:border print:border-gray-400">الفرض 2</th>
+                            <th id="th-t3" class="py-3 px-1 md:px-2 font-bold border-b dark:border-slate-600 print:border print:border-gray-400">الفرض 3</th>
+                            <th id="th-t4" class="py-3 px-1 md:px-2 font-bold border-b dark:border-slate-600 print:border print:border-gray-400">الفرض 4</th>
+                            <th id="th-act" class="py-3 px-1 md:px-2 font-bold text-blue-700 dark:text-blue-400 border-b dark:border-slate-600 print:border print:border-gray-400 print:text-black text-xs md:text-sm whitespace-normal w-20">الأنشطة المندمجة</th>
+                            <th id="th-avg" class="py-3 px-1 md:px-2 font-bold text-indigo-700 dark:text-indigo-400 border-b dark:border-slate-600 print:border print:border-gray-400 print:text-black">معدل المادة</th>
+                            <th id="th-coef" class="py-3 px-1 md:px-2 font-bold text-emerald-700 dark:text-emerald-400 border-b dark:border-slate-600 print:border print:border-gray-400 print:text-black">المعامل</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 print:text-black print:divide-gray-400">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mb-6 print:hidden">
+                <button onclick="addCustomSubject()" class="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-700 hover:to-green-600 text-white font-bold px-5 py-2.5 rounded-xl shadow transition transform hover:-translate-y-0.5 flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-square-plus"></i> إضافة مادة احترافية
+                </button>
+            </div>
+
+            <div id="semesters-block" class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-4 bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 print:hidden">
+                <input id="semester1" type="number" min="0" max="20" step="0.25" placeholder="معدل الدورة 1" class="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-center font-bold focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <input id="semester2" type="number" min="0" max="20" step="0.25" placeholder="معدل الدورة 2" class="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-center font-bold focus:ring-2 focus:ring-indigo-500 outline-none" />
+                <button onclick="calcYearAverage()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl p-2 md:py-2 shadow transition transform hover:-translate-y-0.5 flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-calendar-days"></i> المعدل السنوي
+                </button>
+            </div>
+
+            <div id="yearResult" class="font-bold text-center text-lg md:text-xl mb-6 text-indigo-600 dark:text-indigo-400"></div>
+
+            <div class="flex flex-col gap-3 print:hidden">
+                <button onclick="calcFinalAverage()" class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold py-3 md:py-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition duration-300 text-lg md:text-xl flex justify-center items-center gap-2 md:gap-3">
+                    <i class="fa-solid fa-calculator"></i> 🚀 احسب معدلك باحترافية
+                </button>
+                <!-- تم إزالة زر الطباعة وأزرار التصدير والاستيراد -->
+            </div>
+
+            <!-- ===== الرسم البياني ===== -->
+            <div id="chart-card-holder" class="hidden mt-8 p-4 md:p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl fade-in print:hidden">
+                <h3 class="text-lg md:text-xl font-bold text-center text-slate-800 dark:text-white mb-4"><i class="fa-solid fa-chart-simple text-blue-500 mr-1"></i> تحليل تقدم النقط ومكامن القوة</h3>
+                <div class="relative w-full h-56 md:h-80">
+                    <canvas id="marksChart"></canvas>
+                </div>
+            </div>
+
+            <!-- ===== نتيجة المعدل ===== -->
+            <div id="final-result-box" class="hidden mt-6 md:mt-8 text-center p-6 md:p-8 rounded-2xl text-white shadow-xl transition-all duration-500 transform scale-95 print:block print:scale-100 print:shadow-none print:border print:border-gray-400 print:text-black print:bg-white print:mt-4">
+                <h3 id="final-result-title" class="text-xl md:text-2xl font-bold mb-2 opacity-90 print:opacity-100">المعدل العام للدورة</h3>
+                <p id="final-score-display" class="text-5xl md:text-6xl font-extrabold mb-3 drop-shadow-md print:drop-shadow-none"></p>
+                <p id="final-appreciation" class="text-lg md:text-2xl font-bold bg-white/20 inline-block px-4 md:px-6 py-2 rounded-full backdrop-blur-sm print:bg-transparent print:border print:border-gray-400"></p>
+
+                <div class="mt-4 print:hidden">
+                    <button onclick="generateImageCard()" class="bg-white text-slate-900 font-extrabold px-4 md:px-6 py-2 rounded-xl shadow-md hover:bg-slate-100 transition inline-flex items-center gap-2 text-xs md:text-sm">
+                        <i class="fa-solid fa-camera-retro text-rose-500"></i> تحميل بطاقة النجاح 📸
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== بطاقة التهنئة المخفية ===== -->
+    <div id="hidden-certificate-card" class="absolute opacity-0 pointer-events-none -z-50 w-[550px] h-[350px] bg-gradient-to-tr from-slate-900 via-indigo-950 to-blue-900 text-white rounded-2xl p-8 flex flex-col justify-between border-4 border-yellow-400/50 shadow-2xl text-center font-sans">
+        <div>
+            <div class="text-yellow-400 text-3xl mb-1"><i class="fa-solid fa-crown"></i></div>
+            <h2 class="text-2xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-400">🎓 شهادة النجاح | Certificat de Réussite</h2>
+            <p class="text-[11px] text-slate-300 tracking-widest mt-0.5">صادرة عن منصة مسار بلس الذكية</p>
+        </div>
+        <div class="my-3">
+            <p class="text-slate-400 text-xs">نهنئ التلميذ(ة) على نجاحه | Félicitations à l'élève :</p>
+            <h1 id="cert-student-name" class="text-2xl font-extrabold text-white my-1 drop-shadow">محمد ناجي</h1>
+            <p class="text-slate-300 text-sm mt-2">المعدل العام | Moyenne Générale :</p>
+            <div class="inline-block bg-white/10 px-8 py-2 rounded-full border border-white/20 my-2">
+                <span id="cert-score" class="text-4xl font-black text-yellow-300">18.50</span> <span class="text-xs text-white">/ 20</span>
+            </div>
+        </div>
+        <div class="flex justify-between items-center text-[10px] text-slate-400 border-t border-white/10 pt-2">
+            <div>الميزة: <span id="cert-appreciation" class="text-green-400 font-bold">حسن جداً</span></div>
+            <div class="font-bold flex items-center gap-1"><i class="fa-solid fa-graduation-cap text-blue-400"></i> منصة مسار بلس تمنياتنا بالقمة</div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ===== قسم التقويم المدرسي 2026/2027 ===== -->
+    <!-- ============================================================ -->
+    <section id="school-calendar-section" class="w-full max-w-full md:max-w-[90%] 2xl:max-w-[1400px] bg-white dark:bg-slate-800 p-4 md:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 mb-8 transition-all duration-300 overflow-hidden calendar-section print:shadow-none print:border print:border-gray-300">
+
+        <h2 class="text-2xl md:text-3xl font-extrabold text-center mb-6 text-slate-800 dark:text-white">
+            <i class="fa-regular fa-calendar-circle-plus text-blue-500 mr-2"></i> 📅 التقويم المدرسي 2026/2027
+        </h2>
+
+        <!-- ===== الدخول المدرسي ===== -->
+        <div class="mb-10">
+            <h3 class="text-xl md:text-2xl font-extrabold text-right text-blue-700 dark:text-blue-400 mb-4 flex items-center gap-3 justify-end">
+                <span class="bg-blue-100 dark:bg-blue-900/30 px-4 py-1.5 rounded-full text-sm md:text-base"><i class="fa-solid fa-door-open text-blue-600 dark:text-blue-300 ml-2"></i> 🏫 الدخول المدرسي</span>
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+
+                <!-- الخميس 3 شتنبر -->
+                <div class="entry-card bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border-r-4 border-blue-500 rounded-xl p-4 md:p-5 shadow-sm hover:shadow-md transition school-entry-card">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 text-3xl md:text-4xl">📅</div>
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <span class="font-black text-blue-700 dark:text-blue-300 text-base md:text-lg">الخميس 3 شتنبر 2026</span>
+                                <span class="text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full font-bold">اليوم الأول</span>
+                            </div>
+                            <ul class="space-y-1 text-sm md:text-base text-slate-700 dark:text-slate-300 pr-2 list-disc list-inside">
+                                <li>🎒 التعليم الأولي (المستويان)</li>
+                                <li>📘 السنة الأولى &amp; الثانية ابتدائي</li>
+                                <li>📗 السنة الأولى إعدادي</li>
+                                <li>📕 الجذع المشترك (التأهيلي)</li>
+                            </ul>
+                            <div class="mt-2 text-xs text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1">
+                                <i class="fa-regular fa-clock"></i> <span>📌 انطلاق العام الدراسي</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الجمعة 4 شتنبر -->
+                <div class="entry-card bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/40 dark:to-sky-950/40 border-r-4 border-cyan-500 rounded-xl p-4 md:p-5 shadow-sm hover:shadow-md transition school-entry-card">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 text-3xl md:text-4xl">📅</div>
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <span class="font-black text-cyan-700 dark:text-cyan-300 text-base md:text-lg">الجمعة 4 شتنبر 2026</span>
+                                <span class="text-xs bg-cyan-200 dark:bg-cyan-800 text-cyan-800 dark:text-cyan-200 px-2 py-0.5 rounded-full font-bold">اليوم الثاني</span>
+                            </div>
+                            <ul class="space-y-1 text-sm md:text-base text-slate-700 dark:text-slate-300 pr-2 list-disc list-inside">
+                                <li>📘 السنة الثالثة &amp; الرابعة ابتدائي</li>
+                                <li>📗 السنة الثانية إعدادي</li>
+                                <li>📕 الأولى باكالوريا (جميع المسالك)</li>
+                            </ul>
+                            <div class="mt-2 text-xs text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-1">
+                                <i class="fa-regular fa-clock"></i> <span>📌 مواصلة الدخول</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- السبت 5 شتنبر -->
+                <div class="entry-card bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/40 dark:to-green-950/40 border-r-4 border-emerald-500 rounded-xl p-4 md:p-5 shadow-sm hover:shadow-md transition school-entry-card">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 text-3xl md:text-4xl">📅</div>
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <span class="font-black text-emerald-700 dark:text-emerald-300 text-base md:text-lg">السبت 5 شتنبر 2026</span>
+                                <span class="text-xs bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded-full font-bold">اليوم الثالث</span>
+                            </div>
+                            <ul class="space-y-1 text-sm md:text-base text-slate-700 dark:text-slate-300 pr-2 list-disc list-inside">
+                                <li>📘 السنة الخامسة &amp; السادسة ابتدائي</li>
+                                <li>📗 السنة الثالثة إعدادي</li>
+                                <li>📕 الثانية باكالوريا (جميع المسالك)</li>
+                            </ul>
+                            <div class="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                <i class="fa-regular fa-clock"></i> <span>📌 اكتمال الدخول</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ===== العطل المدرسية ===== -->
+        <div>
+            <h3 class="text-xl md:text-2xl font-extrabold text-right text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-3 justify-end">
+                <span class="bg-amber-100 dark:bg-amber-900/30 px-4 py-1.5 rounded-full text-sm md:text-base"><i class="fa-solid fa-umbrella-beach text-amber-600 dark:text-amber-300 ml-2"></i> 🎉 العطل المدرسية</span>
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+
+                <!-- 1 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">🌿</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">الفترة البيئية الأولى</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">18 – 25 أكتوبر 2026</p>
+                        <span class="inline-block mt-1 text-[10px] bg-blue-200 dark:bg-blue-800/60 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full font-bold">8 أيام</span>
+                    </div>
+                </div>
+
+                <!-- 2 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300">🇲🇦</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">عيد الوحدة</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">31 أكتوبر 2026</p>
+                        <span class="inline-block mt-1 text-[10px] bg-red-200 dark:bg-red-800/60 text-red-800 dark:text-red-200 px-2 py-0.5 rounded-full font-bold">يوم واحد</span>
+                    </div>
+                </div>
+
+                <!-- 3 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-300">🐪</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">ذكرى المسيرة الخضراء</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">6 نونبر 2026</p>
+                        <span class="inline-block mt-1 text-[10px] bg-green-200 dark:bg-green-800/60 text-green-800 dark:text-green-200 px-2 py-0.5 rounded-full font-bold">يوم واحد</span>
+                    </div>
+                </div>
+
+                <!-- 4 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300">🏛️</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">عيد الاستقلال</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">18 نونبر 2026</p>
+                        <span class="inline-block mt-1 text-[10px] bg-amber-200 dark:bg-amber-800/60 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full font-bold">يوم واحد</span>
+                    </div>
+                </div>
+
+                <!-- 5 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-300">🌳</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">الفترة البيئية الثانية</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">6 – 13 دجنبر 2026</p>
+                        <span class="inline-block mt-1 text-[10px] bg-teal-200 dark:bg-teal-800/60 text-teal-800 dark:text-teal-200 px-2 py-0.5 rounded-full font-bold">8 أيام</span>
+                    </div>
+                </div>
+
+                <!-- 6 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300">🎄</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">فاتح السنة الميلادية</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">1 يناير 2027</p>
+                        <span class="inline-block mt-1 text-[10px] bg-indigo-200 dark:bg-indigo-800/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full font-bold">يوم واحد</span>
+                    </div>
+                </div>
+
+                <!-- 7 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300">📜</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">ذكرى تقديم وثيقة الاستقلال</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">11 يناير 2027</p>
+                        <span class="inline-block mt-1 text-[10px] bg-purple-200 dark:bg-purple-800/60 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full font-bold">يوم واحد</span>
+                    </div>
+                </div>
+
+                <!-- 8 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300">ⵣ</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">فاتح السنة الأمازيغية</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">14 يناير 2027</p>
+                        <span class="inline-block mt-1 text-[10px] bg-orange-200 dark:bg-orange-800/60 text-orange-800 dark:text-orange-200 px-2 py-0.5 rounded-full font-bold">يوم واحد</span>
+                    </div>
+                </div>
+
+                <!-- 9 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300">❄️</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">عطلة منتصف السنة</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">24 – 31 يناير 2027</p>
+                        <span class="inline-block mt-1 text-[10px] bg-rose-200 dark:bg-rose-800/60 text-rose-800 dark:text-rose-200 px-2 py-0.5 rounded-full font-bold">8 أيام</span>
+                    </div>
+                </div>
+
+                <!-- 10 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-300">🌙</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">عيد الفطر</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">29 رمضان – 2 شوال 1448</p>
+                        <span class="inline-block mt-1 text-[10px] bg-yellow-200 dark:bg-yellow-800/60 text-yellow-800 dark:text-yellow-200 px-2 py-0.5 rounded-full font-bold">3 – 4 أيام</span>
+                    </div>
+                </div>
+
+                <!-- 11 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-lime-100 dark:bg-lime-900/40 text-lime-600 dark:text-lime-300">🌱</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">الفترة البيئية الثالثة</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">21 – 28 مارس 2027</p>
+                        <span class="inline-block mt-1 text-[10px] bg-lime-200 dark:bg-lime-800/60 text-lime-800 dark:text-lime-200 px-2 py-0.5 rounded-full font-bold">8 أيام</span>
+                    </div>
+                </div>
+
+                <!-- 12 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-300">⚒️</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">عيد الشغل</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">1 ماي 2027</p>
+                        <span class="inline-block mt-1 text-[10px] bg-fuchsia-200 dark:bg-fuchsia-800/60 text-fuchsia-800 dark:text-fuchsia-200 px-2 py-0.5 rounded-full font-bold">يوم واحد</span>
+                    </div>
+                </div>
+
+                <!-- 13 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300">🌿</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">الفترة البيئية الرابعة</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">9 – 16 ماي 2027</p>
+                        <span class="inline-block mt-1 text-[10px] bg-emerald-200 dark:bg-emerald-800/60 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 rounded-full font-bold">8 أيام</span>
+                    </div>
+                </div>
+
+                <!-- 14 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300">🐏</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">عيد الأضحى</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">9 – 11 ذي الحجة 1448</p>
+                        <span class="inline-block mt-1 text-[10px] bg-red-200 dark:bg-red-800/60 text-red-800 dark:text-red-200 px-2 py-0.5 rounded-full font-bold">3 أيام</span>
+                    </div>
+                </div>
+
+                <!-- 15 -->
+                <div class="holiday-card bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-600 hover:shadow-md transition flex items-start gap-3">
+                    <div class="holiday-icon-wrap bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300">🕌</div>
+                    <div>
+                        <p class="font-bold text-sm md:text-base text-slate-800 dark:text-slate-100">فاتح محرم</p>
+                        <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400">1 محرم 1449</p>
+                        <span class="inline-block mt-1 text-[10px] bg-indigo-200 dark:bg-indigo-800/60 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full font-bold">يوم واحد</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ===== ملخص تواريخ الامتحانات (إشارة سريعة) ===== -->
+        <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+            <h4 class="text-base md:text-lg font-extrabold text-slate-700 dark:text-slate-300 mb-3 text-center">
+                <i class="fa-regular fa-clock text-blue-500 mr-1"></i> 📌 تواريخ الامتحانات الرئيسية
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-xs md:text-sm">
+                <div class="bg-slate-100 dark:bg-slate-700/40 rounded-xl p-3 border border-slate-200 dark:border-slate-600">
+                    <p class="font-bold text-blue-700 dark:text-blue-300">الابتدائي</p>
+                    <p class="text-slate-600 dark:text-slate-400">الموحد الإقليمي</p>
+                    <p class="font-bold text-slate-800 dark:text-slate-200">25 – 26 يونيو 2027</p>
+                </div>
+                <div class="bg-slate-100 dark:bg-slate-700/40 rounded-xl p-3 border border-slate-200 dark:border-slate-600">
+                    <p class="font-bold text-purple-700 dark:text-purple-300">الإعدادي</p>
+                    <p class="text-slate-600 dark:text-slate-400">الموحد الجهوي</p>
+                    <p class="font-bold text-slate-800 dark:text-slate-200">23 – 24 يونيو 2027</p>
+                </div>
+                <div class="bg-slate-100 dark:bg-slate-700/40 rounded-xl p-3 border border-slate-200 dark:border-slate-600">
+                    <p class="font-bold text-amber-700 dark:text-amber-300">الأولى باك</p>
+                    <p class="text-slate-600 dark:text-slate-400">الجهوي الموحد</p>
+                    <p class="font-bold text-slate-800 dark:text-slate-200">28 – 29 ماي 2027</p>
+                </div>
+                <div class="bg-slate-100 dark:bg-slate-700/40 rounded-xl p-3 border border-slate-200 dark:border-slate-600">
+                    <p class="font-bold text-emerald-700 dark:text-emerald-300">الثانية باك</p>
+                    <p class="text-slate-600 dark:text-slate-400">الوطني الموحد</p>
+                    <p class="font-bold text-slate-800 dark:text-slate-200">4 يونيو 2027</p>
+                </div>
+            </div>
+            <p class="text-center text-[10px] text-slate-400 dark:text-slate-500 mt-3">
+                <i class="fa-regular fa-circle-info"></i> راجع الجداول الكاملة في الملاحق الوزارية
+            </p>
+        </div>
+
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- ===== قسم الامتحانات والمحاكاة ===== -->
+    <!-- ============================================================ -->
+    <section id="exams-section-container" class="w-full max-w-full md:max-w-[90%] 2xl:max-w-[1400px] bg-white dark:bg-slate-800 p-4 md:p-8 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 print:hidden mb-16 md:mb-8 transition-all duration-300 overflow-hidden">
+
+        <!-- الابتدائي -->
+        <div id="primary-calc-block" class="hidden">
+            <h2 class="text-2xl md:text-3xl font-extrabold text-center mb-6 text-slate-800 dark:text-white">🎓 حساب معدل شهادة الدروس الابتدائية</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+                <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                    <label class="block text-slate-700 dark:text-slate-300 font-bold mb-2 text-center text-sm md:text-lg">المراقبة المستمرة (50%)</label>
+                    <input type="number" id="primary-cc-grade" min="0" max="20" step="0.25" placeholder="أدخل المعدل" class="w-full px-4 py-3 text-center text-lg md:text-xl font-bold rounded-xl border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                    <label class="block text-slate-700 dark:text-slate-300 font-bold mb-2 text-center text-sm md:text-lg">الامتحان الإقليمي الموحد (50%)</label>
+                    <input type="number" id="primary-regional-grade" min="0" max="20" step="0.25" placeholder="نقطة الموحد الإقليمي" class="w-full px-4 py-3 text-center text-lg md:text-xl font-bold rounded-xl border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+            </div>
+            <button onclick="calcPrimaryTotal()" class="w-full bg-gradient-to-r from-green-600 to-teal-500 hover:from-green-700 hover:to-teal-600 text-white font-bold py-3 md:py-4 rounded-xl shadow-lg transition text-lg md:text-xl flex justify-center items-center gap-2 mb-6">
+                <i class="fa-solid fa-calculator"></i> احسب المعدل النهائي للابتدائي
+            </button>
+            <div id="primary-result-display" class="hidden mt-4 p-4 md:p-6 bg-teal-50 dark:bg-teal-900/30 rounded-2xl border border-teal-200 text-center text-xl md:text-2xl font-bold text-teal-800 dark:text-teal-300 mb-6"></div>
+        </div>
+
+        <!-- محاكي الابتدائي -->
+        <div id="primary-distribution-section" class="mt-4 bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-slate-700/30 dark:to-slate-800/30 p-4 md:p-6 rounded-2xl border border-teal-100 dark:border-slate-700 hidden">
+            <h3 class="text-xl md:text-2xl font-extrabold text-center text-slate-800 dark:text-white mb-2">🎯 محاكاة الامتحان الإقليمي</h3>
+            <p class="text-center text-slate-600 dark:text-slate-300 mb-4 text-xs md:text-sm">اكتب المعدل الذي تطمح إليه ليتم تخمين النقط تلقائياً!</p>
+            <div class="max-w-md mx-auto mb-6">
+                <div class="flex gap-2">
+                    <input type="number" id="target-primary-total" placeholder="المعدل المستهدف (مثال: 15)" max="20" min="0" step="0.1" class="w-full px-3 md:px-4 py-3 text-center text-base md:text-lg font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none shadow-sm" />
+                    <button onclick="generatePrimaryDistribution()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 md:px-6 py-3 rounded-xl transition duration-300 shadow-md">
+                        توزيع ⚡
+                    </button>
+                    <button onclick="clearSimulator('primary')" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-3 md:px-4 py-3 rounded-xl transition duration-300 shadow-md">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="primary-distribution-results" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 fade-in mb-6"></div>
+            <div id="primary-interactive-simulator" class="p-4 bg-white dark:bg-slate-800 rounded-xl border border-teal-200 dark:border-slate-700 text-center shadow-inner">
+                <p class="text-lg md:text-xl font-extrabold text-slate-800 dark:text-white">المعدل المتوقع في المحاكي: <span id="simulator-primary-current-avg" class="text-2xl md:text-3xl text-teal-600 dark:text-teal-400">0.00</span> / 20</p>
+            </div>
+        </div>
+
+        <!-- محاكي الإعدادي -->
+        <div id="middle-distribution-section" class="mt-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-700/30 dark:to-slate-800/30 p-4 md:p-6 rounded-2xl border border-indigo-100 dark:border-slate-700 hidden">
+            <h3 class="text-xl md:text-2xl font-extrabold text-center text-slate-800 dark:text-white mb-2">🎯 محاكاة الامتحان الجهوي (إعدادي)</h3>
+            <div class="max-w-md mx-auto mb-6 mt-4">
+                <div class="flex gap-2">
+                    <input type="number" id="target-middle-total" placeholder="المعدل المستهدف (مثال: 14)" max="20" min="0" step="0.1" class="w-full px-3 md:px-4 py-3 text-center text-base md:text-lg font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm" />
+                    <button onclick="generateMiddleDistribution()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 md:px-6 py-3 rounded-xl transition duration-300 shadow-md">
+                        توزيع ⚡
+                    </button>
+                    <button onclick="clearSimulator('middle')" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-3 md:px-4 py-3 rounded-xl transition duration-300 shadow-md">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="middle-distribution-results" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 fade-in mb-6"></div>
+            <div id="middle-interactive-simulator" class="p-4 bg-white dark:bg-slate-800 rounded-xl border border-indigo-200 dark:border-slate-700 text-center shadow-inner">
+                <p class="text-lg md:text-xl font-extrabold text-slate-800 dark:text-white">المعدل المتوقع في المحاكي: <span id="simulator-middle-current-avg" class="text-2xl md:text-3xl text-indigo-600 dark:text-indigo-400">0.00</span> / 20</p>
+            </div>
+        </div>
+
+        <!-- الباكالوريا -->
+        <div id="bac-calc-block" class="hidden">
+            <h2 class="text-2xl md:text-3xl font-extrabold text-center mb-6 text-slate-800 dark:text-white">🎓 حساب معدل الباكالوريا والانتقاء والتوقعات</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+                <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                    <label class="block text-slate-700 dark:text-slate-300 font-bold mb-2 text-center text-sm md:text-lg">المراقبة المستمرة (25%)</label>
+                    <input type="number" id="cc-grade" min="0" max="20" step="0.25" placeholder="المراقبة المستمرة" class="w-full px-4 py-3 text-center text-lg md:text-xl font-bold rounded-xl border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none" />
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                    <label class="block text-slate-700 dark:text-slate-300 font-bold mb-2 text-center text-sm md:text-lg">الامتحان الجهوي (25%)</label>
+                    <input type="number" id="regional-grade" min="0" max="20" step="0.25" placeholder="نقطة الجهوي" class="w-full px-4 py-3 text-center text-lg md:text-xl font-bold rounded-xl border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none" />
+                </div>
+
+                <div id="national-grade-wrapper" class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                    <label class="block text-slate-700 dark:text-slate-300 font-bold mb-2 text-center text-sm md:text-lg">الامتحان الوطني (50%)</label>
+                    <input type="number" id="national-grade" min="0" max="20" step="0.25" placeholder="اختياري للتوقعات" class="w-full px-4 py-3 text-center text-lg md:text-xl font-bold rounded-xl border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none" />
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 md:gap-4 mb-4">
+                <button onclick="calcBacAndSelection()" class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3 md:py-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition duration-300 text-lg md:text-xl flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap"></i> احسب الباك والانتقاء
+                </button>
+                <button id="btn-predict" onclick="calculatePredictions()" class="flex-1 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold py-3 md:py-4 rounded-xl shadow-lg transform hover:-translate-y-1 transition duration-300 text-lg md:text-xl flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-bullseye"></i> احسب التوقعات
+                </button>
+            </div>
+
+            <div id="bac-results-container" class="hidden mt-6 md:mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 text-center fade-in">
+                <div class="bg-indigo-50 dark:bg-indigo-900/30 p-5 md:p-6 rounded-2xl border border-indigo-200 dark:border-indigo-800 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg md:text-xl font-bold text-indigo-800 dark:text-indigo-300 mb-2">المعدل العام للباكالوريا</h3>
+                        <p id="bac-final-score" class="text-5xl md:text-6xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-4"></p>
+                    </div>
+                    <p id="bac-mention" class="text-lg md:text-xl font-bold px-4 md:px-6 py-2 rounded-full inline-block bg-indigo-200 dark:bg-indigo-800 text-indigo-900 dark:text-indigo-100"></p>
+                </div>
+
+                <div class="bg-teal-50 dark:bg-teal-900/30 p-5 md:p-6 rounded-2xl border border-teal-200 dark:border-teal-800 shadow-sm flex flex-col justify-center">
+                    <h3 class="text-lg md:text-xl font-bold text-teal-800 dark:text-teal-300 mb-1">معدل الانتقاء (Seuil)</h3>
+                    <p id="selection-score" class="text-5xl md:text-6xl font-extrabold text-teal-600 dark:text-teal-400 mt-2 mb-2"></p>
+                    <div id="school-thresholds-box" class="space-y-2 text-right mt-4 text-xs md:text-sm"></div>
+                </div>
+            </div>
+
+            <!-- التوجيه الذكي -->
+            <div id="ai-orientation-container" class="hidden mt-6 md:mt-8 fade-in bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800/40 dark:to-slate-700/40 p-4 md:p-6 rounded-2xl border border-blue-100 dark:border-slate-700">
+                <h3 class="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-white mb-2 text-center">
+                    <i class="fa-solid fa-wand-magic-sparkles text-blue-500 mr-1"></i> التوجيه الذكي للمدارس العليا ومدارس الأساتذة
+                </h3>
+                <p class="text-center text-[11px] md:text-xs text-amber-700 dark:text-amber-400 font-bold mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg py-2 px-3">
+                    <i class="fa-solid fa-triangle-exclamation"></i> عتبات الانتقاء أدناه تقريبية وتعتمد على نتائج سنوات سابقة، وقد تختلف عن العتبات الرسمية لهذه السنة. يرجى التأكد دائماً من المصادر الرسمية (AREF / المؤسسة المعنية) قبل اتخاذ أي قرار.
+                </p>
+                <div class="mb-4">
+                    <div class="flex flex-wrap gap-2 justify-center mb-4">
+                        <button onclick="filterSchools('all')" class="px-3 py-1.5 rounded-full text-xs md:text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 transition">الكل</button>
+                        <button onclick="filterSchools('ingenierie')" class="px-3 py-1.5 rounded-full text-xs md:text-sm font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">الهندسة</button>
+                        <button onclick="filterSchools('commerce')" class="px-3 py-1.5 rounded-full text-xs md:text-sm font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">التجارة والتسيير</button>
+                        <button onclick="filterSchools('enseignement')" class="px-3 py-1.5 rounded-full text-xs md:text-sm font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">مدارس الأساتذة</button>
+                        <button onclick="filterSchools('technologie')" class="px-3 py-1.5 rounded-full text-xs md:text-sm font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">التكنولوجيا</button>
+                        <button onclick="filterSchools('sante')" class="px-3 py-1.5 rounded-full text-xs md:text-sm font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">الصحة</button>
+                        <button onclick="filterSchools('agriculture')" class="px-3 py-1.5 rounded-full text-xs md:text-sm font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">الفلاحة</button>
+                        <button onclick="filterSchools('architecture')" class="px-3 py-1.5 rounded-full text-xs md:text-sm font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-blue-600 hover:text-white transition">الهندسة المعمارية</button>
+                    </div>
+                </div>
+                <div id="ai-schools-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 text-right"></div>
+            </div>
+
+            <!-- التوقعات -->
+            <div id="predictions-container" class="hidden mt-6 md:mt-8 fade-in bg-slate-900 p-5 md:p-8 rounded-3xl shadow-2xl border border-slate-700 overflow-hidden">
+                <h3 class="text-xl md:text-2xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 mb-6 tracking-wide leading-snug">
+                    🎯 كم يلزمك في الوطني للحصول على الميزة؟ 🚀
+                </h3>
+                <div id="predictions-grid" class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-5"></div>
+            </div>
+        </div>
+
+        <!-- محاكي الجهوي (الأولى باك) -->
+        <div id="regional-distribution-section" class="mt-8 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-slate-700/30 dark:to-slate-800/30 p-4 md:p-6 rounded-2xl border border-purple-100 dark:border-slate-700 hidden">
+            <h3 class="text-xl md:text-2xl font-extrabold text-center text-slate-800 dark:text-white mb-4">🎯 محاكاة الامتحان الجهوي (الأولى باك)</h3>
+            <div class="max-w-md mx-auto mb-6">
+                <div class="flex gap-2">
+                    <input type="number" id="target-regional-total" placeholder="المعدل المستهدف" max="20" min="0" step="0.1" class="w-full px-3 md:px-4 py-3 text-center text-base md:text-lg font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none shadow-sm" />
+                    <button onclick="generateRegionalDistribution()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 md:px-6 py-3 rounded-xl transition duration-300 shadow-md">توزيع ⚡</button>
+                    <button onclick="clearSimulator('regional')" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-3 md:px-4 py-3 rounded-xl shadow-md"><i class="fa-solid fa-rotate-left"></i></button>
+                </div>
+            </div>
+            <div id="regional-distribution-results" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 fade-in mb-6"></div>
+            <div id="regional-interactive-simulator" class="p-4 bg-white dark:bg-slate-800 rounded-xl border border-purple-200 dark:border-slate-700 text-center shadow-inner">
+                <p class="text-lg md:text-xl font-extrabold text-slate-800 dark:text-white">المعدل الجهوي في المحاكي: <span id="simulator-regional-current-avg" class="text-2xl md:text-3xl text-purple-600 dark:text-purple-400">0.00</span> / 20</p>
+            </div>
+        </div>
+
+        <!-- محاكي الوطني (الثانية باك) -->
+        <div id="target-distribution-section" class="mt-8 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-slate-700/30 dark:to-slate-800/30 p-4 md:p-6 rounded-2xl border border-blue-100 dark:border-slate-700 hidden">
+            <h3 class="text-xl md:text-2xl font-extrabold text-center text-slate-800 dark:text-white mb-4">🎯 محاكاة الامتحان الوطني (الثانية باك)</h3>
+            <div class="max-w-md mx-auto mb-6">
+                <div class="flex gap-2">
+                    <input type="number" id="target-national-total" placeholder="المعدل المستهدف" max="20" min="0" step="0.1" class="w-full px-3 md:px-4 py-3 text-center text-base md:text-lg font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" />
+                    <button onclick="generateNationalDistribution()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 md:px-6 py-3 rounded-xl transition shadow-md">توزيع ⚡</button>
+                    <button onclick="clearSimulator('national')" class="bg-slate-500 hover:bg-slate-600 text-white font-bold px-3 md:px-4 py-3 rounded-xl shadow-md"><i class="fa-solid fa-rotate-left"></i></button>
+                </div>
+            </div>
+            <div id="national-distribution-results" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 fade-in"></div>
+            <div id="national-interactive-simulator" class="mt-6 p-4 bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-slate-700 text-center shadow-inner">
+                <p class="text-lg md:text-xl font-extrabold text-slate-800 dark:text-white">المعدل الوطني في المحاكي: <span id="simulator-current-avg" class="text-2xl md:text-3xl text-cyan-600 dark:text-cyan-400">0.00</span> / 20</p>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- ===== شارة المطور ===== -->
+    <div id="creator-badge" class="fixed bottom-4 right-4 z-[9980] print:hidden floating-element">
+        <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-800 dark:text-slate-200 shadow-[0_4px_15px_rgba(0,0,0,0.1)] px-3 py-2 rounded-full flex items-center gap-2 text-[10px] sm:text-xs border border-slate-200 dark:border-slate-700 cursor-default hover:scale-105 transition-transform">
+            <i class="fa-solid fa-crown text-yellow-500 animate-pulse"></i>
+            <span>من صنع: <strong class="text-blue-600 dark:text-blue-400">محمد ناجي</strong></span>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ===== جافا سكريبت ===== -->
+    <script>
+        // ======================================================================
+        // 1. التواريخ السنوية (مصدرها مقرر وزير التربية الوطنية رقم 105.25)
+        // ======================================================================
+        // ملاحظة: تم إزالة العد التنازلي، ولكن نترك التواريخ للاستخدام المستقبلي إن لزم.
+        // ======================================================================
+
+        // ======================================================================
+        // 2. دوال الترحيب والوضع الداكن
+        // ======================================================================
+        const motivationalPhrases = [
+            { title: "مرحباً بك يا بطل! 👋", desc: "احسب معدلك واكتشف عتبات الانتقاء والتوقعات بكل سهولة." },
+            { title: "أهلاً بك يا أسطورة! 🚀", desc: "خطوتك نحو التميز الدراسي تبدأ من هنا!" },
+            { title: "مرحباً يا قائد! 🌟", desc: "اصنع مستقبلك بيدك اليوم. القمة بانتظارك!" }
+        ];
+
+        function checkWelcomeModal() {
+            const randomIndex = Math.floor(Math.random() * motivationalPhrases.length);
+            const chosenPhrase = motivationalPhrases[randomIndex];
+            const titleEl = document.getElementById('modal-title');
+            const descEl = document.getElementById('modal-desc');
+            if (titleEl) titleEl.innerText = chosenPhrase.title;
+            if (descEl) descEl.innerText = chosenPhrase.desc;
+            const modal = document.getElementById('welcome-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeWelcomeModal() {
+            const modal = document.getElementById('welcome-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            if (document.documentElement.classList.contains('dark')) {
+                if (icon) icon.className = 'fa-solid fa-sun text-xl';
+            } else {
+                if (icon) icon.className = 'fa-solid fa-moon text-xl';
+            }
+        }
+
+        // ======================================================================
+        // 3. بيانات المناهج (نفسها دون تغيير)
+        // ======================================================================
+        const curriculumData = {
+            primary: [{ name: "اللغة العربية", coef: 1 }, { name: "اللغة الفرنسية", coef: 1 }, { name: "الرياضيات",
+                coef: 1 }, { name: "النشاط العلمي", coef: 1 }, { name: "التربية الإسلامية", coef: 1 },
+            { name: "الاجتماعيات", coef: 1 }, { name: "التربية الفنية والبدنية", coef: 1 }],
+            middle: [{ name: "اللغة العربية", coef: 5 }, { name: "اللغة الفرنسية", coef: 5 }, { name: "الرياضيات",
+                coef: 5 }, { name: "التربية الإسلامية", coef: 2 }, { name: "الاجتماعيات", coef: 3 },
+            { name: "علوم الحياة والأرض", coef: 3 }, { name: "الفيزياء والكيمياء", coef: 3 },
+            { name: "التربية البدنية", coef: 2 }],
+            university: [{ name: "الوحدة الأولى (Module 1)", coef: 1 }, { name: "الوحدة الثانية (Module 2)",
+                coef: 1 }, { name: "الوحدة الثالثة (Module 3)", coef: 1 }, { name: "الوحدة الرابعة (Module 4)",
+                coef: 1 }, { name: "الوحدة الخامسة (Module 5)", coef: 1 }, { name: "الوحدة السادسة (Module 6)",
+                coef: 1 }],
+            high: {
+                tc_sc: [{ name: "اللغة العربية", coef: 2 }, { name: "اللغة الفرنسية", coef: 4 }, { name: "الرياضيات",
+                        coef: 5 }, { name: "الفيزياء والكيمياء", coef: 4 }, { name: "علوم الحياة والأرض",
+                        coef: 4 }, { name: "التربية الإسلامية", coef: 2 }, { name: "التاريخ والجغرافيا",
+                        coef: 2 }, { name: "الفلسفة", coef: 2 }, { name: "اللغة الإنجليزية", coef: 2 },
+                    { name: "التربية البدنية", coef: 2 }, { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                tc_arts: [{ name: "اللغة العربية", coef: 4 }, { name: "التاريخ والجغرافيا", coef: 4 },
+                    { name: "اللغة الفرنسية", coef: 4 }, { name: "التربية الإسلامية", coef: 2 },
+                    { name: "الرياضيات", coef: 2 }, { name: "علوم الحياة والأرض", coef: 2 },
+                    { name: "الفلسفة", coef: 2 }, { name: "اللغة الإنجليزية", coef: 3 },
+                    { name: "التربية البدنية", coef: 2 }, { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                tc_tech: [{ name: "الرياضيات", coef: 5 }, { name: "الفيزياء والكيمياء", coef: 4 },
+                    { name: "علوم المهندس", coef: 4 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "اللغة الإنجليزية", coef: 2 }, { name: "الفلسفة", coef: 2 },
+                    { name: "التربية الإسلامية", coef: 2 }, { name: "اللغة العربية", coef: 2 },
+                    { name: "التربية البدنية", coef: 2 }, { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                tc_eco: [{ name: "الرياضيات", coef: 4 }, { name: "الاقتصاد والتدبير", coef: 4 },
+                    { name: "اللغة الفرنسية", coef: 4 }, { name: "اللغة الإنجليزية", coef: 2 },
+                    { name: "اللغة العربية", coef: 2 }, { name: "التاريخ والجغرافيا", coef: 3 },
+                    { name: "التربية الإسلامية", coef: 2 }, { name: "التربية البدنية", coef: 2 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                first_sc_exp: [{ name: "الرياضيات", coef: 5 }, { name: "الفيزياء والكيمياء", coef: 5 },
+                    { name: "علوم الحياة والأرض", coef: 5 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "اللغة العربية", coef: 2 }, { name: "التربية الإسلامية", coef: 2 },
+                    { name: "التاريخ والجغرافيا", coef: 2 }, { name: "الفلسفة", coef: 2 },
+                    { name: "اللغة الإنجليزية", coef: 2 }, { name: "التربية البدنية", coef: 2 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                first_arts: [{ name: "اللغة العربية", coef: 4 }, { name: "التاريخ والجغرافيا", coef: 4 },
+                    { name: "اللغة الفرنسية", coef: 4 }, { name: "الفلسفة", coef: 2 },
+                    { name: "اللغة الإنجليزية", coef: 3 }, { name: "التربية الإسلامية", coef: 2 },
+                    { name: "الرياضيات", coef: 2 }, { name: "التربية البدنية", coef: 2 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                first_sma: [{ name: "الرياضيات", coef: 7 }, { name: "الفيزياء والكيمياء", coef: 5 },
+                    { name: "اللغة الفرنسية", coef: 4 }, { name: "اللغة العربية", coef: 2 },
+                    { name: "التربية الإسلامية", coef: 2 }, { name: "التاريخ والجغرافيا", coef: 2 },
+                    { name: "التربية البدنية", coef: 2 }, { name: "الفلسفة", coef: 2 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                first_eco: [{ name: "العلوم الاقتصادية والتدبير", coef: 6 }, { name: "الرياضيات", coef: 4 },
+                    { name: "اللغة الفرنسية", coef: 4 }, { name: "التاريخ والجغرافيا", coef: 3 },
+                    { name: "اللغة الإنجليزية", coef: 2 }, { name: "اللغة العربية", coef: 2 },
+                    { name: "التربية الإسلامية", coef: 2 }, { name: "التربية البدنية", coef: 2 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                first_tech: [{ name: "علوم المهندس", coef: 4 }, { name: "الرياضيات", coef: 4 },
+                    { name: "الفيزياء والكيمياء", coef: 4 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "اللغة العربية", coef: 2 }, { name: "التاريخ والجغرافيا", coef: 2 },
+                    { name: "التربية الإسلامية", coef: 2 }, { name: "التربية البدنية", coef: 2 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                pc: [{ name: "المواظبة والسلوك", coef: 1 }, { name: "التربية الإسلامية", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }, { name: "الرياضيات", coef: 7 },
+                    { name: "الفلسفة", coef: 2 }, { name: "الفيزياء والكيمياء", coef: 7 },
+                    { name: "اللغة الإنجليزية", coef: 2 }, { name: "اللغة العربية", coef: 2 },
+                    { name: "اللغة الفرنسية", coef: 4 }, { name: "علوم الحياة والأرض", coef: 5 }
+                ],
+                svt: [{ name: "المواظبة والسلوك", coef: 1 }, { name: "التربية الإسلامية", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }, { name: "علوم الحياة والأرض", coef: 7 },
+                    { name: "الفيزياء والكيمياء", coef: 5 }, { name: "الرياضيات", coef: 7 },
+                    { name: "اللغة الإنجليزية", coef: 2 }, { name: "الفلسفة", coef: 2 },
+                    { name: "اللغة العربية", coef: 2 }, { name: "اللغة الفرنسية", coef: 4 }
+                ],
+                sma: [{ name: "الرياضيات", coef: 9 }, { name: "الفيزياء والكيمياء", coef: 7 },
+                    { name: "علوم الحياة والأرض / علوم المهندس", coef: 3 }, { name: "اللغة الإنجليزية",
+                        coef: 2 }, { name: "اللغة الفرنسية", coef: 4 }, { name: "الفلسفة", coef: 2 },
+                    { name: "التربية الإسلامية", coef: 2 }, { name: "التربية البدنية", coef: 4 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                arts: [{ name: "اللغة العربية", coef: 4 }, { name: "الفلسفة", coef: 4 },
+                    { name: "التاريخ والجغرافيا", coef: 4 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "اللغة الإنجليزية", coef: 3 }, { name: "التربية الإسلامية", coef: 2 },
+                    { name: "الرياضيات", coef: 1 }, { name: "التربية البدنية", coef: 4 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                humanities: [{ name: "اللغة العربية", coef: 4 }, { name: "الفلسفة", coef: 4 },
+                    { name: "التاريخ والجغرافيا", coef: 4 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "اللغة الإنجليزية", coef: 3 }, { name: "التربية الإسلامية", coef: 2 },
+                    { name: "الرياضيات", coef: 1 }, { name: "التربية البدنية", coef: 4 },
+                    { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                eco: [{ name: "العلوم الاقتصادية", coef: 6 }, { name: "التدبير المحاسباتي والمالي", coef: 4 },
+                    { name: "الرياضيات", coef: 4 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "الفلسفة", coef: 2 }, { name: "اللغة الإنجليزية", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }, { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                management: [{ name: "التدبير المحاسباتي والمالي", coef: 6 }, { name: "الاقتصاد العام والإحصاء",
+                        coef: 4 }, { name: "الرياضيات", coef: 4 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "الفلسفة", coef: 2 }, { name: "اللغة الإنجليزية", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }, { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                tech_mech: [{ name: "علوم المهندس", coef: 8 }, { name: "الرياضيات", coef: 6 },
+                    { name: "الفيزياء والكيمياء", coef: 6 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "الفلسفة", coef: 2 }, { name: "اللغة الإنجليزية", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }, { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                tech_elec: [{ name: "علوم المهندس", coef: 8 }, { name: "الرياضيات", coef: 6 },
+                    { name: "الفيزياء والكيمياء", coef: 6 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "الفلسفة", coef: 2 }, { name: "اللغة الإنجليزية", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }, { name: "المواظبة والسلوك", coef: 1 }
+                ],
+                prof_industrial: [{ name: "المواد المهنية الصناعية", coef: 8 }, { name: "الرياضيات", coef: 4 },
+                    { name: "الفيزياء والكيمياء", coef: 4 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "اللغة الإنجليزية", coef: 2 }, { name: "الفلسفة", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }
+                ],
+                prof_services: [{ name: "المواد المهنية الخدماتية", coef: 8 }, { name: "الرياضيات", coef: 3 },
+                    { name: "التاريخ والجغرافيا", coef: 4 }, { name: "اللغة الفرنسية", coef: 4 },
+                    { name: "اللغة الإنجليزية", coef: 3 }, { name: "الفلسفة", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }
+                ],
+                prof_agricultural: [{ name: "المواد المهنية الفلاحية", coef: 8 }, { name: "علوم الحياة والأرض",
+                        coef: 5 }, { name: "الفيزياء والكيمياء", coef: 4 }, { name: "اللغة الفرنسية",
+                        coef: 4 }, { name: "اللغة الإنجليزية", coef: 2 }, { name: "الفلسفة", coef: 2 },
+                    { name: "التربية البدنية", coef: 4 }
+                ]
+            }
+        };
+
+        const primaryCurriculumData = [{ name: "اللغة العربية", coef: 1 }, { name: "اللغة الفرنسية", coef: 1 },
+            { name: "الرياضيات", coef: 1 }, { name: "التربية الإسلامية", coef: 1 }, { name: "النشاط العلمي",
+                coef: 1 }, { name: "الاجتماعيات", coef: 1 }
+        ];
+        const middleCurriculumData = [{ name: "اللغة العربية", coef: 3 }, { name: "اللغة الفرنسية", coef: 3 },
+            { name: "الرياضيات", coef: 3 }, { name: "التربية الإسلامية", coef: 1 },
+            { name: "علوم الحياة والأرض", coef: 1 }, { name: "الفيزياء والكيمياء", coef: 1 },
+            { name: "الاجتماعيات", coef: 1 }
+        ];
+
+        const regionalCurriculumData = {
+            first_sc_exp: [{ name: "اللغة العربية", coef: 2 }, { name: "التاريخ والجغرافيا", coef: 2 },
+                { name: "التربية الإسلامية", coef: 2 }, { name: "اللغة الفرنسية", coef: 4 }
+            ],
+            first_arts: [{ name: "الرياضيات", coef: 1 }, { name: "علوم الحياة والأرض", coef: 1 },
+                { name: "التربية الإسلامية", coef: 2 }, { name: "اللغة الفرنسية", coef: 4 }
+            ],
+            first_sma: [{ name: "اللغة العربية", coef: 2 }, { name: "التاريخ والجغرافيا", coef: 2 },
+                { name: "التربية الإسلامية", coef: 2 }, { name: "اللغة الفرنسية", coef: 4 }
+            ],
+            first_eco: [{ name: "اللغة العربية", coef: 2 }, { name: "التاريخ والجغرافيا", coef: 2 },
+                { name: "التربية الإسلامية", coef: 2 }, { name: "اللغة الفرنسية", coef: 4 }
+            ],
+            first_tech: [{ name: "اللغة العربية", coef: 2 }, { name: "التاريخ والجغرافيا", coef: 2 },
+                { name: "التربية الإسلامية", coef: 2 }, { name: "اللغة الفرنسية", coef: 4 }
+            ]
+        };
+
+        const nationalCurriculumData = {
+            pc: [{ name: "الرياضيات", coef: 7 }, { name: "الفيزياء والكيمياء", coef: 7 }, { name: "علوم الحياة والأرض",
+                coef: 5 }, { name: "الفلسفة", coef: 2 }, { name: "اللغة الإنجليزية", coef: 2 }
+            ],
+            svt: [{ name: "الفيزياء والكيمياء", coef: 5 }, { name: "علوم الحياة والأرض", coef: 7 },
+                { name: "الرياضيات", coef: 7 }, { name: "الفلسفة", coef: 2 }, { name: "اللغة الإنجليزية",
+                    coef: 2 }
+            ],
+            sma: [{ name: "الرياضيات", coef: 9 }, { name: "الفيزياء والكيمياء", coef: 7 }, { name: "الفلسفة",
+                    coef: 2 }, { name: "اللغة الإنجليزية", coef: 2 }
+            ],
+            arts: [{ name: "اللغة العربية", coef: 4 }, { name: "التاريخ والجغرافيا", coef: 4 }, { name: "الفلسفة",
+                    coef: 4 }, { name: "اللغة الإنجليزية", coef: 4 }
+            ],
+            humanities: [{ name: "اللغة العربية", coef: 4 }, { name: "التاريخ والجغرافيا", coef: 4 },
+                { name: "الفلسفة", coef: 4 }, { name: "اللغة الإنجليزية", coef: 4 }
+            ],
+            eco: [{ name: "العلوم الاقتصادية", coef: 6 }, { name: "القانون والتدبير", coef: 4 },
+                { name: "الرياضيات", coef: 4 }, { name: "الفلسفة", coef: 2 }
+            ],
+            management: [{ name: "المحاسبة والرياضيات المالية", coef: 6 }, { name: "الاقتصاد والتدبير", coef: 4 },
+                { name: "الرياضيات", coef: 4 }, { name: "الفلسفة", coef: 2 }
+            ],
+            tech_mech: [{ name: "علوم المهندس", coef: 8 }, { name: "الرياضيات", coef: 6 },
+                { name: "الفيزياء والكيمياء", coef: 6 }, { name: "الفلسفة", coef: 2 }
+            ],
+            tech_elec: [{ name: "علوم المهندس", coef: 8 }, { name: "الرياضيات", coef: 6 },
+                { name: "الفيزياء والكيمياء", coef: 6 }, { name: "الفلسفة", coef: 2 }
+            ],
+            prof_industrial: [{ name: "الاختبار المهني التطبيقي", coef: 8 }, { name: "الرياضيات", coef: 4 },
+                { name: "الفيزياء والكيمياء", coef: 4 }, { name: "الفلسفة", coef: 2 }
+            ],
+            prof_services: [{ name: "الاختبار المهني التطبيقي", coef: 8 }, { name: "الرياضيات", coef: 3 },
+                { name: "اللغة الإنجليزية", coef: 4 }, { name: "التاريخ والجغرافيا", coef: 3 },
+                { name: "الفلسفة", coef: 2 }
+            ],
+            prof_agricultural: [{ name: "المواد المهنية الفلاحية", coef: 8 }, { name: "علوم الحياة والأرض",
+                    coef: 5 }, { name: "الفيزياء والكيمياء", coef: 4 }, { name: "الفلسفة", coef: 2 }
+            ]
+        };
+
+        // ======================================================================
+        // 4. قاعدة بيانات المدارس (نفسها دون تغيير)
+        // ======================================================================
+        const allSchoolsDatabase = [
+            { name: "المدرسة المحمدية للمهندسين (EMI) - الرباط", seuil: 16.5, category: "ingenierie",
+                desc: "أقدم وأعرق مدارس الهندسة في المغرب", url: "https://www.emi.ac.ma" },
+            { name: "المدرسة الوطنية العليا للمعلوميات وتحليل النظم (ENSIAS)", seuil: 15.8, category: "ingenierie",
+                desc: "متخصصة في علوم الحاسوب والمعلوميات", url: "https://www.ensias.um5.ac.ma" },
+            { name: "المدرسة الوطنية العليا للكهرباء والميكانيك (ENSEM)", seuil: 14.5, category: "ingenierie",
+                desc: "هندسة الكهرباء والميكانيك", url: "https://www.ensem.ac.ma" },
+            { name: "المدرسة الوطنية العليا للمعادن (ENSMR) - الرباط", seuil: 14.0, category: "ingenierie",
+                desc: "هندسة المعادن والجيولوجيا", url: "https://www.enim.ac.ma" },
+            { name: "المدرسة الحسنية للأشغال العمومية (EHTP)", seuil: 16.0, category: "ingenierie",
+                desc: "الهندسة المدنية والأشغال الكبرى", url: "https://www.ehtp.ac.ma" },
+            { name: "المعهد الوطني للبريد والمواصلات (INPT)", seuil: 14.2, category: "ingenierie",
+                desc: "هندسة الاتصالات وتكنولوجيا المعلومات", url: "https://www.inpt.ac.ma" },
+            { name: "المدرسة الوطنية للصناعة المعدنية (ENIM)", seuil: 13.5, category: "ingenierie",
+                desc: "الصناعة المعدنية والميكانيكية", url: "https://www.enim.ac.ma" },
+            { name: "أكاديمية محمد السادس الدولية للطيران المدني (AIAC)", seuil: 15.0, category: "ingenierie",
+                desc: "هندسة الطيران المدني", url: "https://www.aiac.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - أكادير", seuil: 13.0, category: "ingenierie",
+                desc: "تكوين مهندسين متعددي التخصصات", url: "https://www.ensa-agadir.ac.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - مراكش", seuil: 13.2, category: "ingenierie",
+                desc: "هندسة متعددة التخصصات", url: "https://www.ensa.ac.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - طنجة", seuil: 12.8, category: "ingenierie",
+                desc: "تكوين مهندسين بمواصفات دولية", url: "https://www.ensat.ac.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - فاس", seuil: 12.5, category: "ingenierie",
+                desc: "هندسة مبتكرة ومتعددة التخصصات", url: "https://www.ensaf.ac.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - وجدة", seuil: 12.3, category: "ingenierie",
+                desc: "تكوين مهندسين للجهة الشرقية", url: "https://www.ensa.ump.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - خريبكة", seuil: 12.0, category: "ingenierie",
+                desc: "هندسة وعلوم تطبيقية متطورة", url: "https://www.ensak.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - الحسيمة", seuil: 11.8, category: "ingenierie",
+                desc: "هندسة بشمال المملكة", url: "https://www.ensah.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - آسفي", seuil: 11.5, category: "ingenierie",
+                desc: "تكوين مهندسين للمنطقة", url: "https://www.ensas.uca.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - القنيطرة", seuil: 12.7, category: "ingenierie",
+                desc: "علوم تطبيقية وهندسة", url: "https://www.ensak.uit.ac.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - تطوان", seuil: 12.2, category: "ingenierie",
+                desc: "تكوين مهندسين متعددي التخصصات", url: "https://www.ensatetouan.ac.ma" },
+            { name: "المدرسة الوطنية للعلوم التطبيقية (ENSA) - الجديدة", seuil: 11.9, category: "ingenierie",
+                desc: "هندسة تطبيقية مبتكرة", url: "https://www.ensaj.ucd.ac.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - الدار البيضاء", seuil: 13.5, category: "commerce",
+                desc: "تكوين في التجارة والإدارة", url: "https://www.encgcasa.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - مراكش", seuil: 12.8, category: "commerce",
+                desc: "علوم التدبير والتجارة", url: "https://www.encg-marrakech.ac.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - طنجة", seuil: 12.5, category: "commerce",
+                desc: "التجارة والتسيير الحديث", url: "https://www.encgt.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - أكادير", seuil: 12.3, category: "commerce",
+                desc: "إدارة الأعمال والتجارة", url: "https://www.encg-agadir.ac.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - فاس", seuil: 12.0, category: "commerce",
+                desc: "تسيير وتجارة", url: "https://www.encgfes.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - وجدة", seuil: 11.8, category: "commerce",
+                desc: "علوم التدبير", url: "https://www.encgo.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - القنيطرة", seuil: 12.1, category: "commerce",
+                desc: "التجارة والتسيير", url: "https://www.encgk.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - تطوان", seuil: 11.7, category: "commerce",
+                desc: "تدبير وتجارة", url: "https://www.encg-tetouan.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - الجديدة", seuil: 11.5, category: "commerce",
+                desc: "علوم التدبير والتجارة", url: "https://www.encgj.ma" },
+            { name: "المدرسة الوطنية للتجارة والتسيير (ENCG) - الداخلة", seuil: 11.0, category: "commerce",
+                desc: "التجارة والتسيير بالصحراء", url: "https://www.encgdakhla.ma" },
+            { name: "كلية الطب والصيدلة - الرباط", seuil: 16.0, category: "sante", desc: "تكوين الأطباء والصيادلة",
+                url: "https://www.medramoumm6.org" },
+            { name: "كلية الطب والصيدلة - الدار البيضاء", seuil: 15.8, category: "sante", desc: "العلوم الطبية والصيدلانية",
+                url: "https://www.fmpc.ac.ma" },
+            { name: "كلية الطب والصيدلة - مراكش", seuil: 15.5, category: "sante", desc: "تكوين طبي متميز",
+                url: "https://www.fmpm.uca.ma" },
+            { name: "كلية الطب والصيدلة - فاس", seuil: 15.2, category: "sante", desc: "الطب والصيدلة",
+                url: "https://www.fmpfes.ma" },
+            { name: "كلية الطب والصيدلة - وجدة", seuil: 14.8, category: "sante", desc: "تكوين الأطباء",
+                url: "https://www.fmpo.ma" },
+            { name: "كلية الطب والصيدلة - أكادير", seuil: 14.5, category: "sante", desc: "العلوم الطبية",
+                url: "https://www.fmpa.ma" },
+            { name: "كلية الطب والصيدلة - طنجة", seuil: 14.3, category: "sante", desc: "تكوين طبي",
+                url: "https://www.fmpt.ma" },
+            { name: "كلية طب الأسنان - الدار البيضاء", seuil: 14.5, category: "sante", desc: "طب وجراحة الأسنان",
+                url: "https://www.fmd.um5.ac.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - الدار البيضاء", seuil: 11.5, category: "technologie",
+                desc: "دبلوم جامعي للتكنولوجيا", url: "https://www.est-casablanca.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - فاس", seuil: 11.0, category: "technologie",
+                desc: "تكوين تقني متخصص", url: "https://www.estfes.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - مراكش", seuil: 11.2, category: "technologie",
+                desc: "التكنولوجيا التطبيقية", url: "https://www.estm.uca.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - أكادير", seuil: 10.8, category: "technologie",
+                desc: "دبلوم جامعي تقني", url: "https://www.esta.ac.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - وجدة", seuil: 10.5, category: "technologie",
+                desc: "تكوين تقني", url: "https://www.esto.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - مكناس", seuil: 10.8, category: "technologie",
+                desc: "التكنولوجيا والابتكار", url: "https://www.estmeknes.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - العيون", seuil: 10.0, category: "technologie",
+                desc: "تكنولوجيا بالصحراء", url: "https://www.estlaayoune.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - بني ملال", seuil: 10.3, category: "technologie",
+                desc: "تقني متخصص", url: "https://www.estbm.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - سلا", seuil: 11.0, category: "technologie",
+                desc: "دبلوم جامعي للتكنولوجيا", url: "https://www.estsala.ma" },
+            { name: "المدرسة العليا للتكنولوجيا (EST) - خنيفرة", seuil: 10.0, category: "technologie",
+                desc: "تكوين تقني", url: "https://www.estkhenifra.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - الرباط", seuil: 14.5, category: "enseignement",
+                desc: "تكوين أساتذة التعليم الثانوي", url: "https://www.ensrabat.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - مراكش", seuil: 14.0, category: "enseignement",
+                desc: "تكوين المدرسين", url: "https://www.ens-marrakech.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - فاس", seuil: 13.8, category: "enseignement",
+                desc: "إعداد أساتذة المستقبل", url: "https://www.ens-fes.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - تطوان", seuil: 13.5, category: "enseignement",
+                desc: "تكوين أساتذة التعليم", url: "https://www.ens-tetouan.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - الدار البيضاء", seuil: 14.2, category: "enseignement",
+                desc: "تكوين المدرسين", url: "https://www.enscasa.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - مكناس", seuil: 13.5, category: "enseignement",
+                desc: "إعداد أساتذة", url: "https://www.ens-meknes.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - أكادير", seuil: 13.2, category: "enseignement",
+                desc: "تكوين أساتذة التعليم", url: "https://www.ensagadir.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - وجدة", seuil: 13.0, category: "enseignement",
+                desc: "إعداد المدرسين", url: "https://www.enso.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - القنيطرة", seuil: 13.3, category: "enseignement",
+                desc: "تكوين أساتذة", url: "https://www.enskenitra.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - طنجة", seuil: 13.5, category: "enseignement",
+                desc: "تكوين المدرسين", url: "https://www.enstanger.ma" },
+            { name: "المدرسة العليا للأساتذة (ENS) - بني ملال", seuil: 12.8, category: "enseignement",
+                desc: "إعداد أساتذة التعليم", url: "https://www.ensbm.ma" },
+            { name: "المركز الجهوي لمهن التربية والتكوين (CRMEF) - جميع الجهات", seuil: 12.0, category: "enseignement",
+                desc: "تكوين أساتذة الابتدائي والإعدادي", url: "https://www.crmef.ma" },
+            { name: "معهد الحسن الثاني للزراعة والبيطرة (IAV) - الرباط", seuil: 14.0, category: "agriculture",
+                desc: "الهندسة الزراعية والبيطرية", url: "https://www.iav.ac.ma" },
+            { name: "المدرسة الوطنية للفلاحة (ENA) - مكناس", seuil: 13.0, category: "agriculture",
+                desc: "الهندسة الفلاحية", url: "https://www.enameknes.ac.ma" },
+            { name: "المدرسة الوطنية الغابوية للمهندسين (ENFI)", seuil: 12.5, category: "agriculture",
+                desc: "هندسة الغابات", url: "https://www.enfi.ac.ma" },
+            { name: "المدرسة الوطنية للهندسة المعمارية (ENA) - الرباط", seuil: 14.5, category: "architecture",
+                desc: "الهندسة المعمارية", url: "https://www.ena.archi.ac.ma" },
+            { name: "المدرسة الوطنية للهندسة المعمارية (ENA) - مراكش", seuil: 14.0, category: "architecture",
+                desc: "فن العمارة والبناء", url: "https://www.enamarrakech.ac.ma" },
+            { name: "المدرسة الوطنية للهندسة المعمارية (ENA) - فاس", seuil: 13.8, category: "architecture",
+                desc: "التصميم المعماري", url: "https://www.enafes.ma" },
+            { name: "المدرسة الوطنية للهندسة المعمارية (ENA) - أكادير", seuil: 13.5, category: "architecture",
+                desc: "العمارة والبناء", url: "https://www.enaagadir.ma" },
+            { name: "المدرسة الوطنية للهندسة المعمارية (ENA) - وجدة", seuil: 13.2, category: "architecture",
+                desc: "الهندسة المعمارية", url: "https://www.enaoujda.ma" },
+            { name: "الأقسام التحضيرية للمدارس العليا (CPGE) - ابن رشد", seuil: 15.5, category: "ingenierie",
+                desc: "تحضير لمباريات المدارس العليا", url: "https://www.cpge.ac.ma" },
+            { name: "الأقسام التحضيرية (CPGE) - ابن تيمية", seuil: 15.0, category: "ingenierie",
+                desc: "مسلك رياضي وفيزيائي", url: "https://www.cpge.ac.ma" },
+            { name: "الأقسام التحضيرية (CPGE) - مولاي يوسف", seuil: 15.2, category: "ingenierie",
+                desc: "تحضير للمدارس الكبرى", url: "https://www.cpge.ac.ma" },
+            { name: "كلية العلوم والتقنيات (FST) - المحمدية", seuil: 11.5, category: "technologie",
+                desc: "إجازة مهنية وهندسة", url: "https://www.fstm.ac.ma" },
+            { name: "كلية العلوم والتقنيات (FST) - مراكش", seuil: 11.0, category: "technologie",
+                desc: "علوم وتقنيات متطورة", url: "https://www.fstg-marrakech.ac.ma" },
+            { name: "كلية العلوم والتقنيات (FST) - فاس", seuil: 10.8, category: "technologie",
+                desc: "تكوين علمي وتقني", url: "https://www.fst-usmba.ac.ma" },
+            { name: "كلية العلوم والتقنيات (FST) - طنجة", seuil: 10.5, category: "technologie",
+                desc: "علوم تطبيقية", url: "https://www.fstt.ac.ma" },
+            { name: "كلية العلوم والتقنيات (FST) - بني ملال", seuil: 10.0, category: "technologie",
+                desc: "تكوين تقني وعلمي", url: "https://www.fstbm.ac.ma" }
+        ];
+
+        function getUpdatedThresholds() { return allSchoolsDatabase; }
+
+        // ======================================================================
+        // 5. دوال مساعدة
+        // ======================================================================
+        function clampGrade(value) {
+            const num = parseFloat(value);
+            if (isNaN(num)) return NaN;
+            return Math.min(20, Math.max(0, num));
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        let myChartInstance = null;
+        let lastScrollY = window.scrollY;
+        let currentFilter = 'all';
+        let customSubjectsState = [];
+
+        // ======================================================================
+        // 6. دوال الجدول والمحتوى
+        // ======================================================================
+        function handleLevelChange() {
+            const level = document.getElementById('level-select').value;
+            const branchContainer = document.getElementById('branch-container');
+            const semestersBlock = document.getElementById('semesters-block');
+            const thT1 = document.getElementById('th-t1');
+            const thT2 = document.getElementById('th-t2');
+            const thT3 = document.getElementById('th-t3');
+            const thT4 = document.getElementById('th-t4');
+            const thAct = document.getElementById('th-act');
+            const thName = document.getElementById('th-name');
+            const thAvg = document.getElementById('th-avg');
+
+            if (level === 'high') {
+                if (branchContainer) branchContainer.classList.remove('hidden');
+                if (semestersBlock) semestersBlock.classList.remove('hidden');
+                if (thName) thName.innerText = "المادة";
+                if (thT1) thT1.style.display = "";
+                if (thT2) thT2.style.display = "";
+                if (thT3) thT3.style.display = "";
+                if (thT4) thT4.style.display = "";
+                if (thAct) thAct.style.display = "";
+                if (thAvg) thAvg.innerText = "معدل المادة";
+            } else if (level === 'university') {
+                if (branchContainer) branchContainer.classList.add('hidden');
+                if (semestersBlock) semestersBlock.classList.add('hidden');
+                if (thName) thName.innerText = "الوحدة (Module)";
+                if (thT1) thT1.innerText = "عادية";
+                if (thT2) thT2.innerText = "استدراكية";
+                if (thT3) thT3.style.display = "none";
+                if (thT4) thT4.style.display = "none";
+                if (thAct) thAct.style.display = "none";
+                if (thAvg) thAvg.innerText = "معدل الوحدة";
+            } else {
+                if (branchContainer) branchContainer.classList.add('hidden');
+                if (semestersBlock) semestersBlock.classList.add('hidden');
+                if (thName) thName.innerText = "المادة";
+                if (thT1) thT1.innerText = "الفرض 1";
+                if (thT2) thT2.innerText = "الفرض 2";
+                if (thT3) thT3.innerText = "الفرض 3";
+                if (thT4) thT4.innerText = "الفرض 4";
+                if (thT3) thT3.style.display = "";
+                if (thT4) thT4.style.display = "";
+                if (thAct) thAct.style.display = "";
+                if (thAvg) thAvg.innerText = "معدل المادة";
+            }
+            onBranchOrLevelChange();
+        }
+
+        function onBranchOrLevelChange() {
+            renderSubjects();
+            updateExamSectionsVisibility();
+        }
+
+        function updateExamSectionsVisibility() {
+            const level = document.getElementById('level-select').value;
+            const branch = document.getElementById('branch-select').value;
+            const container = document.getElementById('exams-section-container');
+            const primaryBlock = document.getElementById('primary-calc-block');
+            const primaryDistBlock = document.getElementById('primary-distribution-section');
+            const middleDistBlock = document.getElementById('middle-distribution-section');
+            const bacCalcBlock = document.getElementById('bac-calc-block');
+            const regionalBlock = document.getElementById('regional-distribution-section');
+            const nationalBlock = document.getElementById('target-distribution-section');
+            const btnPredict = document.getElementById('btn-predict');
+            const nationalGradeWrapper = document.getElementById('national-grade-wrapper');
+
+            if (container) container.classList.add('hidden');
+            if (primaryBlock) primaryBlock.classList.add('hidden');
+            if (primaryDistBlock) primaryDistBlock.classList.add('hidden');
+            if (middleDistBlock) middleDistBlock.classList.add('hidden');
+            if (bacCalcBlock) bacCalcBlock.classList.add('hidden');
+            if (regionalBlock) regionalBlock.classList.add('hidden');
+            if (nationalBlock) nationalBlock.classList.add('hidden');
+
+            if (level === 'primary') {
+                if (container) container.classList.remove('hidden');
+                if (primaryBlock) primaryBlock.classList.remove('hidden');
+                if (primaryDistBlock) primaryDistBlock.classList.remove('hidden');
+                renderPrimarySimFields();
+            } else if (level === 'middle') {
+                if (container) container.classList.remove('hidden');
+                if (middleDistBlock) middleDistBlock.classList.remove('hidden');
+                renderMiddleSimFields();
+            } else if (level === 'high') {
+                const isFirstBac = branch && branch.startsWith('first_');
+                const isSecondBac = branch && !branch.startsWith('tc_') && !isFirstBac;
+                if (isFirstBac) {
+                    if (container) container.classList.remove('hidden');
+                    if (bacCalcBlock) bacCalcBlock.classList.remove('hidden');
+                    if (regionalBlock) regionalBlock.classList.remove('hidden');
+                    if (btnPredict) btnPredict.classList.add('hidden');
+                    if (nationalGradeWrapper) nationalGradeWrapper.classList.add('hidden');
+                    renderRegionalFields();
+                } else if (isSecondBac) {
+                    if (container) container.classList.remove('hidden');
+                    if (bacCalcBlock) bacCalcBlock.classList.remove('hidden');
+                    if (nationalBlock) nationalBlock.classList.remove('hidden');
+                    if (btnPredict) btnPredict.classList.remove('hidden');
+                    if (nationalGradeWrapper) nationalGradeWrapper.classList.remove('hidden');
+                    renderNationalFields();
+                }
+            }
+        }
+
+        function renderSubjects() {
+            const level = document.getElementById('level-select').value;
+            const tbody = document.getElementById('table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let subjectsList = [];
+
+            if (level === 'high') {
+                const branch = document.getElementById('branch-select').value;
+                subjectsList = curriculumData.high[branch] || curriculumData.high.pc;
+            } else if (level === 'middle') {
+                subjectsList = curriculumData.middle;
+            } else if (level === 'university') {
+                subjectsList = curriculumData.university;
+            } else {
+                subjectsList = curriculumData.primary;
+            }
+
+            subjectsList.forEach((subject, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors print:border-b print:border-gray-400";
+
+                let wClass = "w-12 md:w-16";
+                if (level === 'university') wClass = "w-16 md:w-20";
+
+                if (level === 'university') {
+                    tr.innerHTML = `
+                            <td class="py-3 px-2 font-bold text-right border-l dark:border-slate-700 print:border print:border-gray-400 max-w-[120px] md:max-w-none whitespace-normal text-xs md:text-sm">${subject.name}</td>
+                            <td class="py-3 px-1 print:border print:border-gray-400"><input type="number" id="t1-${index}" min="0" max="20" step="0.25" placeholder="عادية" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                            <td class="py-3 px-1 print:border print:border-gray-400"><input type="number" id="t2-${index}" min="0" max="20" step="0.25" placeholder="استدراك" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                            <td style="display:none"><input type="number" id="t3-${index}" value=""></td><td style="display:none"><input type="number" id="t4-${index}" value=""></td><td style="display:none"><input type="number" id="act-${index}" value=""></td>
+                            <td class="py-3 px-1 border-r border-l dark:border-slate-700 bg-indigo-50/30 dark:bg-indigo-900/10 print:bg-transparent print:border print:border-gray-400"><span id="subj-avg-${index}" class="font-bold text-indigo-700 dark:text-indigo-400">-</span></td>
+                            <td class="py-3 px-1 border-r dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 print:bg-transparent print:border print:border-gray-400"><input type="number" id="coef-${index}" value="${subject.coef}" class="w-10 md:w-14 mx-auto px-1 py-2 text-center rounded border-none bg-transparent font-extrabold text-emerald-600 dark:text-emerald-400 outline-none print:text-black"></td>
+                        `;
+                } else {
+                    tr.innerHTML = `
+                            <td class="py-3 px-2 font-bold text-right border-l dark:border-slate-700 print:border print:border-gray-400 max-w-[100px] md:max-w-none whitespace-normal text-xs md:text-sm leading-tight">${subject.name}</td>
+                            <td class="py-3 px-0.5 md:px-1 print:border print:border-gray-400"><input type="number" id="t1-${index}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                            <td class="py-3 px-0.5 md:px-1 print:border print:border-gray-400"><input type="number" id="t2-${index}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                            <td id="td-t3-${index}" class="py-3 px-0.5 md:px-1 print:border print:border-gray-400"><input type="number" id="t3-${index}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                            <td id="td-t4-${index}" class="py-3 px-0.5 md:px-1 print:border print:border-gray-400"><input type="number" id="t4-${index}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                            <td id="td-act-${index}" class="py-3 px-0.5 md:px-1 bg-blue-50/50 dark:bg-blue-900/10 print:bg-transparent print:border print:border-gray-400"><input type="number" id="act-${index}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-blue-200 dark:border-blue-800 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700 dark:text-blue-400 transition-all print:border-none print:w-full print:text-black"></td>
+                            <td class="py-3 px-1 md:px-2 border-r border-l dark:border-slate-700 bg-indigo-50/30 dark:bg-indigo-900/10 print:bg-transparent print:border print:border-gray-400"><span id="subj-avg-${index}" class="font-bold text-indigo-700 dark:text-indigo-400">-</span></td>
+                            <td class="py-3 px-1 border-r dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 print:bg-transparent print:border print:border-gray-400"><input type="number" id="coef-${index}" value="${subject.coef}" class="w-10 md:w-14 mx-auto px-1 py-2 text-center rounded border-none bg-transparent font-extrabold text-emerald-600 dark:text-emerald-400 outline-none print:text-black"></td>
+                        `;
+                }
+                tbody.appendChild(tr);
+            });
+
+            customSubjectsState.forEach(savedName => {
+                addCustomSubject(savedName, false);
+            });
+        }
+
+        function addCustomSubject(savedName = "", trackInState = true) {
+            const level = document.getElementById('level-select').value;
+            const tbody = document.getElementById('table-body');
+            if (!tbody) return;
+            const i = tbody.rows.length;
+            const tr = document.createElement('tr');
+            tr.className = "custom-subject hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors print:border-b print:border-gray-400";
+            let wClass = level === 'university' ? "w-16 md:w-20" : "w-12 md:w-16";
+            const safeName = escapeHtml(savedName);
+
+            if (level === 'university') {
+                tr.innerHTML = `
+                        <td class="py-3 px-2 font-bold text-right border-l dark:border-slate-700 print:border print:border-gray-400"><input placeholder="اسم الوحدة" value="${safeName}" oninput="syncCustomSubjectName(this)" class="custom-name-input w-24 md:w-full px-1 py-1 rounded border border-slate-300 dark:border-slate-600 bg-transparent text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-sm"></td>
+                        <td class="py-3 px-1 print:border print:border-gray-400"><input type="number" id="t1-${i}" min="0" max="20" step="0.25" placeholder="عادية" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                        <td class="py-3 px-1 print:border print:border-gray-400"><input type="number" id="t2-${i}" min="0" max="20" step="0.25" placeholder="استدراك" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                        <td style="display:none"><input type="number" id="t3-${i}"></td><td style="display:none"><input type="number" id="t4-${i}"></td><td style="display:none"><input type="number" id="act-${i}"></td>
+                        <td class="py-3 px-1 border-r border-l dark:border-slate-700 bg-indigo-50/30 dark:bg-indigo-900/10 print:bg-transparent print:border print:border-gray-400"><span id="subj-avg-${i}" class="font-bold text-indigo-700 dark:text-indigo-400">-</span></td>
+                        <td class="py-3 px-1 border-r dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 print:bg-transparent print:border print:border-gray-400"><input type="number" id="coef-${i}" value="1" title="تعديل المعامل" onchange="calcFinalAverage(); saveAllData();" class="w-12 md:w-14 mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-900 font-extrabold text-emerald-600 dark:text-emerald-400 outline-none print:text-black"></td>
+                    `;
+            } else {
+                tr.innerHTML = `
+                        <td class="py-3 px-2 font-bold text-right border-l dark:border-slate-700 print:border print:border-gray-400"><input placeholder="مادة مخصصة" value="${safeName}" oninput="syncCustomSubjectName(this)" class="custom-name-input w-24 md:w-full px-1 py-1 rounded border border-slate-300 dark:border-slate-600 bg-transparent text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-sm"></td>
+                        <td class="py-3 px-0.5 md:px-1 print:border print:border-gray-400"><input type="number" id="t1-${i}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                        <td class="py-3 px-0.5 md:px-1 print:border print:border-gray-400"><input type="number" id="t2-${i}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                        <td class="py-3 px-0.5 md:px-1 print:border print:border-gray-400"><input type="number" id="t3-${i}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                        <td class="py-3 px-0.5 md:px-1 print:border print:border-gray-400"><input type="number" id="t4-${i}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all print:border-none print:w-full"></td>
+                        <td class="py-3 px-0.5 md:px-1 bg-blue-50/50 dark:bg-blue-900/10 print:bg-transparent print:border print:border-gray-400"><input type="number" id="act-${i}" min="0" max="20" step="0.25" class="${wClass} mx-auto px-1 py-2 text-center rounded border border-blue-200 dark:border-blue-800 bg-transparent focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700 dark:text-blue-400 transition-all print:border-none print:w-full print:text-black"></td>
+                        <td class="py-3 px-1 border-r border-l dark:border-slate-700 bg-indigo-50/30 dark:bg-indigo-900/10 print:bg-transparent print:border print:border-gray-400"><span id="subj-avg-${i}" class="font-bold text-indigo-700 dark:text-indigo-400">-</span></td>
+                        <td class="py-3 px-1 border-r dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 print:bg-transparent print:border print:border-gray-400"><input type="number" id="coef-${i}" value="1" title="تعديل المعامل" onchange="calcFinalAverage(); saveAllData();" class="w-12 md:w-14 mx-auto px-1 py-2 text-center rounded border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-900 font-extrabold text-emerald-600 dark:text-emerald-400 outline-none print:text-black"></td>
+                    `;
+            }
+            tbody.appendChild(tr);
+
+            if (trackInState) {
+                customSubjectsState.push(savedName);
+                saveAllData();
+            }
+        }
+
+        function syncCustomSubjectName(inputEl) {
+            const tbody = document.getElementById('table-body');
+            const customInputs = Array.from(tbody.querySelectorAll('.custom-name-input'));
+            const idx = customInputs.indexOf(inputEl);
+            if (idx !== -1) {
+                customSubjectsState[idx] = inputEl.value;
+            }
+            saveAllData();
+        }
+
+        // ======================================================================
+        // 7. دوال الحساب
+        // ======================================================================
+        function calcYearAverage() {
+            const s1 = clampGrade(document.getElementById('semester1').value);
+            const s2 = clampGrade(document.getElementById('semester2').value);
+            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0) { alert("الرجاء إدخال معدل الدورتين الأولى والثانية!");
+                return; }
+            const yAvg = (s1 + s2) / 2;
+            const yearResult = document.getElementById('yearResult');
+            if (yearResult) yearResult.innerText = `المعدل السنوي: ${yAvg.toFixed(2)} / 20`;
+            saveAllData();
+        }
+
+        function calcFinalAverage() {
+            const level = document.getElementById('level-select').value;
+            const tbody = document.getElementById('table-body');
+            const totalRows = tbody.rows.length;
+
+            let totalScore = 0;
+            let totalCoef = 0;
+            let hasData = false;
+            let chartLabels = [];
+            let chartDataValues = [];
+
+            for (let i = 0; i < totalRows; i++) {
+                const nameInput = tbody.rows[i].querySelector('.custom-name-input');
+                let subjectName = nameInput ? nameInput.value : "";
+                if (!nameInput) {
+                    let subjectsList = [];
+                    if (level === 'high') subjectsList = curriculumData.high[document.getElementById('branch-select')
+                        .value] || curriculumData.high.pc;
+                    else if (level === 'middle') subjectsList = curriculumData.middle;
+                    else if (level === 'university') subjectsList = curriculumData.university;
+                    else subjectsList = curriculumData.primary;
+                    if (subjectsList[i]) subjectName = subjectsList[i].name;
+                }
+                if (!subjectName) subjectName = `مادة ${i+1}`;
+
+                const isEnglish = subjectName === "اللغة الإنجليزية";
+                const avgDisplay = document.getElementById(`subj-avg-${i}`);
+                const coefEl = document.getElementById(`coef-${i}`);
+                const coef = coefEl ? parseFloat(coefEl.value || 1) : 1;
+
+                if (level === 'university') {
+                    const t1El = document.getElementById(`t1-${i}`);
+                    const t2El = document.getElementById(`t2-${i}`);
+                    const t1 = t1El ? t1El.value : "";
+                    const t2 = t2El ? t2El.value : "";
+                    if (t1 !== "") {
+                        hasData = true;
+                        let normalGrade = clampGrade(t1);
+                        let finalUnitGrade = normalGrade;
+                        if (normalGrade < 10 && t2 !== "") {
+                            finalUnitGrade = Math.max(normalGrade, clampGrade(t2));
+                        }
+                        if (avgDisplay) avgDisplay.innerText = finalUnitGrade.toFixed(2);
+                        totalScore += (finalUnitGrade * coef);
+                        totalCoef += coef;
+                        chartLabels.push(subjectName);
+                        chartDataValues.push(finalUnitGrade);
+                    } else if (avgDisplay) avgDisplay.innerText = "-";
+                } else {
+                    let tests = [];
+                    for (let j = 1; j <= 4; j++) {
+                        const el = document.getElementById(`t${j}-${i}`);
+                        let val = el ? el.value : "";
+                        if (val !== "") tests.push(clampGrade(val));
+                    }
+                    const actEl = document.getElementById(`act-${i}`);
+                    const actInput = actEl ? actEl.value : "";
+
+                    if (tests.length > 0 || actInput !== "") {
+                        hasData = true;
+                        let testAvg = tests.length > 0 ? tests.reduce((a, b) => a + b, 0) / tests.length : clampGrade(
+                        actInput);
+                        let finalSubjectGrade = testAvg;
+                        if (actInput !== "") {
+                            let actGrade = clampGrade(actInput);
+                            finalSubjectGrade = isEnglish ? (testAvg * 0.60) + (actGrade * 0.40) : (testAvg * 0.75) + (
+                                actGrade * 0.25);
+                        }
+                        if (avgDisplay) avgDisplay.innerText = finalSubjectGrade.toFixed(2);
+                        totalScore += (finalSubjectGrade * coef);
+                        totalCoef += coef;
+                        chartLabels.push(subjectName);
+                        chartDataValues.push(finalSubjectGrade);
+                    } else if (avgDisplay) avgDisplay.innerText = "-";
+                }
+            }
+
+            if (!hasData || totalCoef === 0) { alert("المرجو إدخال النقط في الجدول أولاً!"); return; }
+
+            const finalAverage = totalScore / totalCoef;
+            const ccInputEl = document.getElementById('cc-grade');
+            if (ccInputEl) ccInputEl.value = finalAverage.toFixed(2);
+            const prCC = document.getElementById('primary-cc-grade');
+            if (prCC) prCC.value = finalAverage.toFixed(2);
+
+            const resultBox = document.getElementById('final-result-box');
+            const scoreDisplay = document.getElementById('final-score-display');
+            const appreciation = document.getElementById('final-appreciation');
+
+            if (scoreDisplay) scoreDisplay.innerText = finalAverage.toFixed(2);
+            if (resultBox) resultBox.classList.remove('hidden', 'scale-95', 'bg-emerald-500', 'bg-amber-500',
+            'bg-rose-500', 'dark:bg-emerald-600', 'dark:bg-amber-600', 'dark:bg-rose-600');
+
+            if (finalAverage >= 16) {
+                if (resultBox) resultBox.classList.add('bg-emerald-500', 'dark:bg-emerald-600');
+                if (appreciation) appreciation.innerText = "ميزة حسن جداً 👑";
+            } else if (finalAverage >= 14) {
+                if (resultBox) resultBox.classList.add('bg-emerald-500', 'dark:bg-emerald-600');
+                if (appreciation) appreciation.innerText = "ميزة حسن 🌟";
+            } else if (finalAverage >= 12) {
+                if (resultBox) resultBox.classList.add('bg-amber-500', 'dark:bg-amber-600');
+                if (appreciation) appreciation.innerText = "ميزة مستحسن 👍";
+            } else if (finalAverage >= 10) {
+                if (resultBox) resultBox.classList.add('bg-amber-500', 'dark:bg-amber-600');
+                if (appreciation) appreciation.innerText = "ميزة مقبول 🎯";
+            } else {
+                if (resultBox) resultBox.classList.add('bg-rose-500', 'dark:bg-rose-600');
+                if (appreciation) appreciation.innerText = "رسوب";
+            }
+
+            renderProgressChart(chartLabels, chartDataValues);
+            saveAllData();
+        }
+
+        function renderProgressChart(labels, dataValues) {
+            if (typeof Chart === 'undefined') {
+                console.warn('مكتبة Chart.js غير محمّلة؛ تم تخطي الرسم البياني.');
+                return;
+            }
+            const chartHolder = document.getElementById('chart-card-holder');
+            if (chartHolder) chartHolder.classList.remove('hidden');
+            const ctx = document.getElementById('marksChart');
+            if (!ctx) return;
+            try {
+                const context = ctx.getContext('2d');
+                if (myChartInstance) myChartInstance.destroy();
+                const isDark = document.documentElement.classList.contains('dark');
+                myChartInstance = new Chart(context, {
+                    type: 'bar',
+                    data: { labels: labels, datasets: [{ label: 'المعدل', data: dataValues,
+                            backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                            borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 2, borderRadius: 8 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { y: { min: 0, max: 20, ticks: { color: isDark ? '#cbd5e1' : '#475569' },
+                                grid: { color: isDark ? 'rgba(51, 65, 85, 0.4)' :
+                                    'rgba(226, 232, 240, 0.8)' } }, x: { ticks: { color: isDark ?
+                                        '#cbd5e1' : '#475569', maxRotation: 45, minRotation: 45,
+                                        font: { size: 10 } }, grid: { display: false } } } }
+                });
+            } catch (err) {
+                console.error('renderProgressChart error:', err);
+            }
+        }
+
+        // ======================================================================
+        // 8. دوال المحاكيات
+        // ======================================================================
+        function renderPrimarySimFields() {
+            const container = document.getElementById('primary-distribution-results');
+            if (!container) return;
+            container.innerHTML = '';
+            primaryCurriculumData.forEach((subj, i) => {
+                container.innerHTML +=
+                    `<div class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 shadow-sm text-center">
+                        <h4 class="font-bold text-slate-800 dark:text-slate-100 text-xs md:text-sm mb-1">${subj.name}</h4><p class="text-[10px] md:text-xs text-teal-600 dark:text-teal-400 font-bold mb-2">المعامل: ${subj.coef}</p>
+                        <input type="number" id="prim-sim-grade-${i}" max="20" min="0" step="0.25" oninput="updatePrimarySimulatorAverage()" class="w-full px-2 py-1.5 text-center font-extrabold text-lg rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-teal-600 dark:text-teal-400 focus:ring-2 outline-none"></div>`;
+            });
+            updatePrimarySimulatorAverage();
+        }
+
+        function generatePrimaryDistribution() {
+            const target = parseFloat(document.getElementById('target-primary-total').value);
+            if (isNaN(target) || target < 0 || target > 20) return alert("الرجاء إدخال معدل مستهدف صحيح");
+            primaryCurriculumData.forEach((_, i) => {
+                const el = document.getElementById(`prim-sim-grade-${i}`);
+                if (el) el.value = target.toFixed(2);
+            });
+            updatePrimarySimulatorAverage();
+        }
+
+        function updatePrimarySimulatorAverage() {
+            let pts = 0,
+                coefs = 0,
+                filled = 0;
+            primaryCurriculumData.forEach((subj, i) => {
+                const el = document.getElementById(`prim-sim-grade-${i}`);
+                if (el) {
+                    const g = clampGrade(el.value) || 0;
+                    if (el.value !== "") filled++;
+                    pts += g * subj.coef;
+                    coefs += subj.coef;
+                }
+            });
+            const avg = coefs > 0 ? (pts / coefs) : 0;
+            const simSpan = document.getElementById('simulator-primary-current-avg');
+            if (simSpan) simSpan.innerText = avg.toFixed(2);
+            const regField = document.getElementById('primary-regional-grade');
+            if (regField && filled > 0) regField.value = avg.toFixed(2);
+            saveAllData();
+        }
+
+        function renderMiddleSimFields() {
+            const container = document.getElementById('middle-distribution-results');
+            if (!container) return;
+            container.innerHTML = '';
+            middleCurriculumData.forEach((subj, i) => {
+                container.innerHTML +=
+                    `<div class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 shadow-sm text-center">
+                        <h4 class="font-bold text-slate-800 dark:text-slate-100 text-xs md:text-sm mb-1">${subj.name}</h4><p class="text-[10px] md:text-xs text-indigo-600 dark:text-indigo-400 font-bold mb-2">المعامل: ${subj.coef}</p>
+                        <input type="number" id="mid-sim-grade-${i}" max="20" min="0" step="0.25" oninput="updateMiddleSimulatorAverage()" class="w-full px-2 py-1.5 text-center font-extrabold text-lg rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-indigo-600 dark:text-indigo-400 focus:ring-2 outline-none"></div>`;
+            });
+            updateMiddleSimulatorAverage();
+        }
+
+        function generateMiddleDistribution() {
+            const target = parseFloat(document.getElementById('target-middle-total').value);
+            if (isNaN(target) || target < 0 || target > 20) return alert("الرجاء إدخال معدل مستهدف صحيح");
+            middleCurriculumData.forEach((_, i) => {
+                const el = document.getElementById(`mid-sim-grade-${i}`);
+                if (el) el.value = target.toFixed(2);
+            });
+            updateMiddleSimulatorAverage();
+        }
+
+        function updateMiddleSimulatorAverage() {
+            let pts = 0,
+                coefs = 0;
+            middleCurriculumData.forEach((subj, i) => {
+                const el = document.getElementById(`mid-sim-grade-${i}`);
+                if (el) {
+                    const g = clampGrade(el.value) || 0;
+                    pts += g * subj.coef;
+                    coefs += subj.coef;
+                }
+            });
+            const simSpan = document.getElementById('simulator-middle-current-avg');
+            if (simSpan) simSpan.innerText = (coefs > 0 ? pts / coefs : 0).toFixed(2);
+            saveAllData();
+        }
+
+        function renderRegionalFields() {
+            const branch = document.getElementById('branch-select').value;
+            const subjects = regionalCurriculumData[branch];
+            if (!subjects) return;
+            const container = document.getElementById('regional-distribution-results');
+            if (!container) return;
+            container.innerHTML = '';
+            subjects.forEach((subj, i) => {
+                container.innerHTML +=
+                    `<div class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 shadow-sm text-center">
+                        <h4 class="font-bold text-slate-800 dark:text-slate-100 text-xs md:text-sm mb-1">${subj.name}</h4><p class="text-[10px] md:text-xs text-purple-600 dark:text-purple-400 font-bold mb-2">المعامل: ${subj.coef}</p>
+                        <input type="number" id="reg-sim-grade-${i}" max="20" min="0" step="0.25" oninput="updateRegionalSimulatorAverage()" class="w-full px-2 py-1.5 text-center font-extrabold text-lg rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-purple-600 dark:text-purple-400 focus:ring-2 outline-none"></div>`;
+            });
+            updateRegionalSimulatorAverage();
+        }
+
+        function generateRegionalDistribution() {
+            const target = parseFloat(document.getElementById('target-regional-total').value);
+            if (isNaN(target) || target < 0 || target > 20) return alert("الرجاء إدخال معدل جهوي صحيح");
+            const branch = document.getElementById('branch-select').value;
+            const subjects = regionalCurriculumData[branch];
+            if (!subjects) return;
+            subjects.forEach((_, i) => {
+                const el = document.getElementById(`reg-sim-grade-${i}`);
+                if (el) el.value = target.toFixed(2);
+            });
+            updateRegionalSimulatorAverage();
+        }
+
+        function updateRegionalSimulatorAverage() {
+            const branch = document.getElementById('branch-select').value;
+            const subjects = regionalCurriculumData[branch];
+            if (!subjects) return;
+            let pts = 0,
+                coefs = 0,
+                filled = 0;
+            subjects.forEach((subj, i) => {
+                const el = document.getElementById(`reg-sim-grade-${i}`);
+                if (el) {
+                    const g = clampGrade(el.value) || 0;
+                    if (el.value !== "") filled++;
+                    pts += g * subj.coef;
+                    coefs += subj.coef;
+                }
+            });
+            const avg = coefs > 0 ? pts / coefs : 0;
+            const simSpan = document.getElementById('simulator-regional-current-avg');
+            if (simSpan) simSpan.innerText = avg.toFixed(2);
+            const regField = document.getElementById('regional-grade');
+            if (regField && filled > 0) regField.value = avg.toFixed(2);
+            saveAllData();
+        }
+
+        function renderNationalFields() {
+            const branch = document.getElementById('branch-select').value;
+            const subjects = nationalCurriculumData[branch];
+            if (!subjects) return;
+            const container = document.getElementById('national-distribution-results');
+            if (!container) return;
+            container.innerHTML = '';
+            subjects.forEach((subj, i) => {
+                container.innerHTML +=
+                    `<div class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 shadow-sm text-center">
+                        <h4 class="font-bold text-slate-800 dark:text-slate-100 text-xs md:text-sm mb-1">${subj.name}</h4><p class="text-[10px] md:text-xs text-cyan-600 dark:text-cyan-400 font-bold mb-2">المعامل: ${subj.coef}</p>
+                        <input type="number" id="sim-grade-${i}" max="20" min="0" step="0.25" oninput="updateSimulatorAverage()" class="w-full px-2 py-1.5 text-center font-extrabold text-lg rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-cyan-600 dark:text-cyan-400 focus:ring-2 outline-none"></div>`;
+            });
+            updateSimulatorAverage();
+        }
+
+        function generateNationalDistribution() {
+            const target = parseFloat(document.getElementById('target-national-total').value);
+            if (isNaN(target) || target < 0 || target > 20) return alert("الرجاء إدخال معدل وطني صحيح");
+            const branch = document.getElementById('branch-select').value;
+            const subjects = nationalCurriculumData[branch];
+            if (!subjects) return;
+            subjects.forEach((_, i) => {
+                const el = document.getElementById(`sim-grade-${i}`);
+                if (el) el.value = target.toFixed(2);
+            });
+            updateSimulatorAverage();
+        }
+
+        function updateSimulatorAverage() {
+            const branch = document.getElementById('branch-select').value;
+            const subjects = nationalCurriculumData[branch];
+            if (!subjects) return;
+            let pts = 0,
+                coefs = 0,
+                filled = 0;
+            subjects.forEach((subj, i) => {
+                const el = document.getElementById(`sim-grade-${i}`);
+                if (el) {
+                    const g = clampGrade(el.value) || 0;
+                    if (el.value !== "") filled++;
+                    pts += g * subj.coef;
+                    coefs += subj.coef;
+                }
+            });
+            const avg = coefs > 0 ? pts / coefs : 0;
+            const simSpan = document.getElementById('simulator-current-avg');
+            if (simSpan) simSpan.innerText = avg.toFixed(2);
+            const natField = document.getElementById('national-grade');
+            if (natField && filled > 0) natField.value = avg.toFixed(2);
+            saveAllData();
+        }
+
+        function clearSimulator(type) {
+            const targetEl = document.getElementById(`target-${type}-total`);
+            if (targetEl) targetEl.value = "";
+            let prefix = type === 'primary' ? 'prim-sim-grade' : type === 'middle' ? 'mid-sim-grade' : type ===
+                'regional' ? 'reg-sim-grade' : 'sim-grade';
+            let list = type === 'primary' ? primaryCurriculumData : type === 'middle' ? middleCurriculumData : type ===
+                'regional' ? regionalCurriculumData[document.getElementById('branch-select').value] :
+                nationalCurriculumData[document.getElementById('branch-select').value];
+            if (list) list.forEach((_, i) => {
+                const el = document.getElementById(`${prefix}-${i}`);
+                if (el) el.value = "";
+            });
+            if (type === 'primary') updatePrimarySimulatorAverage();
+            else if (type === 'middle') updateMiddleSimulatorAverage();
+            else if (type === 'regional') updateRegionalSimulatorAverage();
+            else updateSimulatorAverage();
+        }
+
+        // ======================================================================
+        // 9. الباكالوريا والانتقاء
+        // ======================================================================
+        function calcBacAndSelection() {
+            const cc = clampGrade(document.getElementById('cc-grade').value);
+            const reg = clampGrade(document.getElementById('regional-grade').value);
+            const nat = clampGrade(document.getElementById('national-grade').value);
+            if (isNaN(cc) || isNaN(reg) || isNaN(nat)) return alert("المرجو إدخال النقط الثلاث (المراقبة، الجهوي، الوطني)!");
+
+            const finalBac = (cc * 0.25) + (reg * 0.25) + (nat * 0.50);
+            const finalSelection = (reg * 0.25) + (nat * 0.75);
+
+            const bacFinalSpan = document.getElementById('bac-final-score');
+            const selectionSpan = document.getElementById('selection-score');
+            if (bacFinalSpan) bacFinalSpan.innerText = finalBac.toFixed(2);
+            if (selectionSpan) selectionSpan.innerText = finalSelection.toFixed(2);
+
+            const mentionSpan = document.getElementById('bac-mention');
+            if (mentionSpan) {
+                if (finalBac >= 16) mentionSpan.innerText = "ميزة: حسن جداً 🏆";
+                else if (finalBac >= 14) mentionSpan.innerText = "ميزة: حسن 🌟";
+                else if (finalBac >= 12) mentionSpan.innerText = "ميزة: مستحسن 👍";
+                else if (finalBac >= 10) mentionSpan.innerText = "ميزة: مقبول 🎯";
+                else mentionSpan.innerText = "لم يوفق بعد";
+            }
+
+            const updatedSchools = getUpdatedThresholds();
+            let schoolHtml = '';
+            updatedSchools.slice(0, 10).forEach(school => {
+                const isEligible = finalSelection >= school.seuil;
+                schoolHtml +=
+                    `<div class="flex items-center justify-between p-2 md:p-2.5 rounded-xl border text-xs md:text-sm font-bold ${isEligible ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300 border-green-200' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border-rose-200'}"><span>${escapeHtml(school.name)}</span><span class="flex items-center gap-1"><i class="fa-solid ${isEligible ? 'fa-circle-check text-green-600' : 'fa-circle-xmark text-rose-600'}"></i> ${isEligible ? 'مؤهل' : 'أقل'} (${school.seuil.toFixed(1)})</span></div>`;
+            });
+            const thresholdsBox = document.getElementById('school-thresholds-box');
+            if (thresholdsBox) thresholdsBox.innerHTML = schoolHtml;
+
+            triggerAIOrientation(finalSelection);
+            const resultsContainer = document.getElementById('bac-results-container');
+            if (resultsContainer) resultsContainer.classList.remove('hidden');
+            resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            saveAllData();
+        }
+
+        function filterSchools(category) {
+            currentFilter = category;
+            const selectionScore = parseFloat(document.getElementById('selection-score')?.innerText || 0);
+            if (selectionScore > 0) {
+                triggerAIOrientation(selectionScore);
+            }
+        }
+
+        function triggerAIOrientation(avg) {
+            const container = document.getElementById('ai-orientation-container');
+            const grid = document.getElementById('ai-schools-cards-grid');
+            if (!container || !grid) return;
+            container.classList.remove('hidden');
+            grid.innerHTML = '';
+
+            const updatedSchools = getUpdatedThresholds();
+            let filteredSchools = updatedSchools;
+
+            if (currentFilter !== 'all') {
+                filteredSchools = updatedSchools.filter(school => school.category === currentFilter);
+            }
+
+            filteredSchools.forEach(school => {
+                const isEligible = avg >= school.seuil;
+                const categoryLabels = {
+                    'ingenierie': '🏗️ هندسة',
+                    'commerce': '💼 تجارة وتسيير',
+                    'enseignement': '👨‍🏫 تعليم',
+                    'technologie': '🔧 تكنولوجيا',
+                    'sante': '🏥 صحة',
+                    'agriculture': '🌾 فلاحة',
+                    'architecture': '🏛️ عمارة'
+                };
+
+                grid.innerHTML += `
+                        <div class="school-card bg-white dark:bg-slate-800 border ${isEligible ? 'school-eligible border-green-200' : 'school-not-eligible border-red-200'} p-4 rounded-xl shadow-md transition-all relative">
+                            <span class="absolute top-2 left-2 text-[10px] font-bold bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">${categoryLabels[school.category] || '📚 تعليم'}</span>
+                            <h4 class="font-extrabold text-sm md:text-base mt-4 mb-2">${escapeHtml(school.name)}</h4>
+                            <p class="text-[11px] md:text-xs text-slate-600 dark:text-slate-300 mb-3">${escapeHtml(school.desc)}</p>
+                            <div class="flex items-center justify-between mt-auto pt-2 border-t border-slate-100 dark:border-slate-700">
+                                <span class="text-sm md:text-base font-bold ${isEligible ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                                    العتبة: ${school.seuil.toFixed(1)}
+                                    ${isEligible ? ' ✅' : ' ❌'}
+                                </span>
+                                <a href="${school.url}" target="_blank" rel="noopener noreferrer" class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-[10px] md:text-xs px-3 py-1.5 rounded-lg hover:from-blue-700 hover:to-cyan-600 transition">
+                                    الموقع <i class="fa-solid fa-external-link-alt text-[8px] ml-1"></i>
+                                </a>
+                            </div>
+                        </div>`;
+            });
+
+            if (filteredSchools.length === 0) {
+                grid.innerHTML = '<p class="text-center text-slate-500 col-span-full py-4">لا توجد مدارس في هذه الفئة</p>';
+            }
+        }
+
+        function calculatePredictions() {
+            const cc = clampGrade(document.getElementById('cc-grade').value);
+            const reg = clampGrade(document.getElementById('regional-grade').value);
+            if (isNaN(cc) || isNaN(reg)) return alert("المرجو إدخال المراقبة المستمرة والجهوي أولاً!");
+            const targets = [{ l: "مقبول 🎯", s: 10, bg: "from-amber-500 to-orange-500" },
+            { l: "مستحسن 👍", s: 12, bg: "from-yellow-400 to-amber-500" },
+            { l: "حسن 🌟", s: 14, bg: "from-emerald-400 to-teal-500" },
+            { l: "حسن جداً 🚀", s: 16, bg: "from-blue-500 to-cyan-500" },
+            { l: "امتياز 👑", s: 18, bg: "from-purple-500 to-indigo-500" }
+            ];
+            let html = '';
+            targets.forEach(t => {
+                const req = (t.s - (cc * 0.25) - (reg * 0.25)) / 0.50;
+                let text = req > 20 ? "غير ممكنة ❌" : req <= 0 ? "مضمونة ✅" :
+                    `${req.toFixed(2)} <span class='text-xs opacity-80'>/20</span>`;
+                html +=
+                    `<div class="bg-gradient-to-br ${t.bg} p-3 md:p-4 rounded-xl md:rounded-2xl shadow-lg text-center border border-white/20"><p class="text-[11px] md:text-[13px] text-white font-extrabold mb-1 drop-shadow-md">${t.l}</p><p class="text-lg md:text-2xl font-black text-white drop-shadow-lg">${text}</p></div>`;
+            });
+            const predictionsGrid = document.getElementById('predictions-grid');
+            if (predictionsGrid) predictionsGrid.innerHTML = html;
+            const predictionsContainer = document.getElementById('predictions-container');
+            if (predictionsContainer) predictionsContainer.classList.remove('hidden');
+            predictionsContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function calcPrimaryTotal() {
+            const cc = clampGrade(document.getElementById('primary-cc-grade').value);
+            const reg = clampGrade(document.getElementById('primary-regional-grade').value);
+            if (isNaN(cc) || isNaN(reg)) return alert("الرجاء إدخال النقطتين!");
+            const display = document.getElementById('primary-result-display');
+            if (display) display.classList.remove('hidden');
+            if (display) display.innerText = `المعدل النهائي: ${((cc * 0.5) + (reg * 0.5)).toFixed(2)} / 20`;
+            saveAllData();
+        }
+
+        // ======================================================================
+        // 10. بطاقة التهنئة
+        // ======================================================================
+        function generateImageCard() {
+            // استخدم اسمًا افتراضيًا بدلاً من حقل الإدخال المحذوف
+            let sName = "التلميذ البطل";
+            const certName = document.getElementById('cert-student-name');
+            const certScore = document.getElementById('cert-score');
+            const certApp = document.getElementById('cert-appreciation');
+            const finalScore = document.getElementById('final-score-display');
+            const finalApp = document.getElementById('final-appreciation');
+            if (certName) certName.innerText = sName;
+            if (certScore && finalScore) certScore.innerText = finalScore.innerText;
+            if (certApp && finalApp) {
+                let appText = finalApp.innerText.split(' ')[1] || "مقبول";
+                certApp.innerText = appText;
+            }
+            const certCard = document.getElementById('hidden-certificate-card');
+            if (certCard) {
+                try {
+                    html2canvas(certCard, { scale: 2, useCORS: true }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = `massar_plus_${sName}_success.png`;
+                        link.href = canvas.toDataURL("image/png");
+                        link.click();
+                    }).catch(err => {
+                        console.error('html2canvas failed:', err);
+                        alert(
+                            'تعذّر إنشاء بطاقة الصورة. قد يكون حاجب الإعلانات أو إعدادات المتصفح يمنعان ذلك. حاول تعطيل أي إضافة حجب وإعادة المحاولة.'
+                            );
+                    });
+                } catch (err) {
+                    console.error('generateImageCard error:', err);
+                    alert('تعذّر إنشاء بطاقة الصورة بسبب خطأ غير متوقع.');
+                }
+            }
+        }
+
+        // ======================================================================
+        // 11. حفظ وتصدير واستيراد البيانات (تم الاحتفاظ بالحفظ المحلي فقط، وإزالة التصدير/الاستيراد)
+        // ======================================================================
+        function saveAllData() {
+            const inputsData = {};
+            document.querySelectorAll('input[type="number"], input[type="text"]').forEach(input => {
+                if (input.id) inputsData[input.id] = input.value;
+            });
+            localStorage.setItem('massar_plus_secure_backup', JSON.stringify({
+                level: document.getElementById('level-select').value,
+                branch: document.getElementById('branch-select').value,
+                // تم إزالة studentName
+                inputs: inputsData,
+                customSubjects: customSubjectsState
+            }));
+        }
+
+        function loadAllData() {
+            const saved = localStorage.getItem('massar_plus_secure_backup');
+            if (!saved) {
+                renderSubjects();
+                updateExamSectionsVisibility();
+                return;
+            }
+            try {
+                const data = JSON.parse(saved);
+                if (data.level) document.getElementById('level-select').value = data.level;
+                handleLevelChange();
+                if (data.branch) document.getElementById('branch-select').value = data.branch;
+                // تم إزالة studentName
+                customSubjectsState = Array.isArray(data.customSubjects) ? data.customSubjects.slice() : [];
+                renderSubjects();
+                updateExamSectionsVisibility();
+                if (data.inputs) Object.keys(data.inputs).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = data.inputs[id];
+                });
+                if (Object.values(data.inputs || {}).filter(v => v !== "").length > 2) {
+                    calcFinalAverage();
+                    if (document.getElementById('semester1').value && document.getElementById('semester2')
+                        .value) calcYearAverage();
+                }
+            } catch (e) {
+                console.error('loadAllData error:', e);
+                renderSubjects();
+                updateExamSectionsVisibility();
+            }
+        }
+
+        function resetAllData() {
+            if (confirm('هل أنت متأكد يا أسطورة من رغبتك في حذف جميع البيانات؟')) {
+                localStorage.removeItem('massar_plus_secure_backup');
+                customSubjectsState = [];
+                location.reload();
+            }
+        }
+
+        // ======================================================================
+        // 12. أحداث التمرير
+        // ======================================================================
+        window.addEventListener('scroll', () => {
+            const creatorBadge = document.getElementById('creator-badge');
+            if (window.scrollY < lastScrollY && window.scrollY > 100) {
+                if (creatorBadge) creatorBadge.classList.add('floating-hidden');
+            } else {
+                if (creatorBadge) creatorBadge.classList.remove('floating-hidden');
+            }
+            lastScrollY = window.scrollY;
+        });
+
+        window.addEventListener('input', saveAllData);
+
+        // ======================================================================
+        // 13. التحميل
+        // ======================================================================
+        window.onload = function() {
+            loadAllData();
+            checkWelcomeModal();
+        };
+    </script>
+</body>
+</html>

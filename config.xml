@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.naji.mycustomapp" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
+    <name>Masar Excellence AI</name>
+    <description>تطبيقي الخاص المترجم للآيفون</description>
+    <author>Mohammed Naji</author>
+    <content src="index.html" />
+    <access origin="*" />
+
+    <platform name="ios">
+        <icon src="icons/icon-20x20.png" width="20" height="20" />
+        <icon src="icons/icon-29x29.png" width="29" height="29" />
+        <icon src="icons/icon-40x40.png" width="40" height="40" />
+        <icon src="icons/icon-60x60.png" width="60" height="60" />
+        <icon src="icons/icon-76x76.png" width="76" height="76" />
+        <icon src="icons/icon-84x84.png" width="83" height="83" />
+        <icon src="icons/icon-1024x1024.png" width="1024" height="1024" />
+    </platform>
+</widget>
