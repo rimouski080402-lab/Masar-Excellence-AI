@@ -1,8 +1,16 @@
 workflows:
-  my-workflow:
-    name: Build Application
+  android-debug:
+    name: Build Android Debug
     environment:
       node: latest
     scripts:
-      - name: Build
-        script: echo "No build script needed for this project"
+      - name: Install Cordova
+        script: npm install -g cordova
+      - name: Install Dependencies
+        script: npm install
+      - name: Build Android
+        script: |
+          cordova platform add android
+          cordova build android
+    artifacts:
+      - platforms/android/app/build/outputs/apk/debug/*.apk
