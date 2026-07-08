@@ -4,16 +4,21 @@ workflows:
     environment:
       node: latest
     scripts:
-      - name: List Files (Debug)
-        script: |
-          echo "محتوى المجلد الحالي هو:"
-          ls -F
       - name: Install Cordova
         script: |
           npm install -g cordova
-      - name: Build Android
+      - name: Organize Files
         script: |
+          # 1. إنشاء مجلد www إذا لم يكن موجوداً
+          mkdir -p www
+          # 2. نقل ملفات الويب إلى مجلد www
+          mv index.html www/
+          # إذا كان لديك صور أو ملفات css/js انقلها أيضاً بنفس الطريقة
+      - name: Add Platform and Build
+        script: |
+          # 3. إعداد المشروع للعمل
           cordova platform add android
+          # 4. بناء التطبيق
           cordova build android
     artifacts:
       - platforms/android/app/build/outputs/apk/debug/*.apk
