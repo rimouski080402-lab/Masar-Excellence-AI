@@ -4,14 +4,16 @@ workflows:
     environment:
       node: latest
     scripts:
+      - name: List Files (Debug)
+        script: |
+          echo "محتوى المجلد الحالي هو:"
+          ls -F
       - name: Install Cordova
         script: |
           npm install -g cordova
-      - name: Prepare Project
-        script: |
-          cordova platform add android
       - name: Build Android
         script: |
+          cordova platform add android
           cordova build android
     artifacts:
       - platforms/android/app/build/outputs/apk/debug/*.apk
